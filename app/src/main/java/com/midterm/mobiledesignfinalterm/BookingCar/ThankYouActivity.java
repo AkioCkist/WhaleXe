@@ -47,6 +47,7 @@ import com.midterm.mobiledesignfinalterm.R;
 import com.midterm.mobiledesignfinalterm.homepage.Homepage;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -203,23 +204,44 @@ public class ThankYouActivity extends AppCompatActivity {
                         PdfDocument pdf = new PdfDocument(writer);
                         Document document = new Document(pdf, PageSize.A4);
 
-                        // Create a Unicode font that supports Vietnamese characters
-                        PdfFont unicodeFont = PdfFontFactory.createFont(StandardFonts.TIMES_ROMAN, PdfEncodings.IDENTITY_H);
-                        document.setFont(unicodeFont);
+                        // Remove default margins to prevent white space
+                        document.setMargins(0, 0, 0, 0);
 
-                        // Draw background color on the page
-                        PdfPage page = pdf.addNewPage();
-                        PdfCanvas canvas = new PdfCanvas(page);
-                        Rectangle pageSize = page.getPageSize();
-                        canvas.setFillColor(backgroundPrimary)
-                                .rectangle(pageSize.getLeft(), pageSize.getBottom(), pageSize.getWidth(), pageSize.getHeight())
-                                .fill();
+                        // Create a Unicode font that supports Vietnamese characters using the BeVietnamPro font
+                        PdfFont unicodeFont;
+                        try {
+                            // Load BeVietnamPro font from resources
+                            InputStream fontStream = getResources().openRawResource(R.font.bevietnampro_regular);
+                            byte[] fontData = new byte[fontStream.available()];
+                            fontStream.read(fontData);
+                            fontStream.close();
 
-                        // Set margins for content
-                        document.setMargins(36, 36, 36, 36);
+                            // Create font from the font data
+                            FontProgram fontProgram = FontProgramFactory.createFont(fontData);
+                            unicodeFont = PdfFontFactory.createFont(fontProgram, PdfEncodings.IDENTITY_H);
+
+                            // Set as default font for the document
+                            document.setFont(unicodeFont);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            // Fallback to default font if custom font loading fails
+                            unicodeFont = PdfFontFactory.createFont(StandardFonts.TIMES_ROMAN, PdfEncodings.IDENTITY_H);
+                            document.setFont(unicodeFont);
+                        }
+
+                        // Create main container table that will hold all content with background
+                        Table mainContainer = new Table(UnitValue.createPercentArray(new float[]{1}))
+                                .setWidth(UnitValue.createPercentValue(100))
+                                .setMargin(0);
+
+                        Cell mainCell = new Cell()
+                                .setBackgroundColor(backgroundPrimary)
+                                .setBorder(null)
+                                .setPadding(36) // This acts as our margins
+                                .setMinHeight(PageSize.A4.getHeight()); // Ensure it covers full page height
 
                         // Create header section
-                        Table headerTable = new Table(UnitValue.createPercentArray(new float[]{1, 1}))
+                        Table headerTable = new Table(UnitValue.createPercentArray(new float[]{2, 1}))
                                 .setWidth(UnitValue.createPercentValue(100));
 
                         // Company info in left column with background
@@ -232,7 +254,7 @@ public class ThankYouActivity extends AppCompatActivity {
                                 .setPadding(10)
                                 .setBorder(null);
 
-                        // Current date in right column - aligned right with background
+                        // Current date in right column
                         SimpleDateFormat dateFormatter = new SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault());
                         String currentDate = dateFormatter.format(new Date());
                         Cell dateCell = new Cell()
@@ -243,17 +265,19 @@ public class ThankYouActivity extends AppCompatActivity {
 
                         headerTable.addCell(companyCell);
                         headerTable.addCell(dateCell);
-                        document.add(headerTable);
 
-                        // Add divider line using app colors
-                        document.add(new Paragraph("")
+                        // Add header to main cell
+                        mainCell.add(headerTable);
+
+                        // Add divider line
+                        mainCell.add(new Paragraph("")
                                 .setHeight(1)
                                 .setBorder(new SolidBorder(dividerColor, 1))
                                 .setMarginBottom(15)
                         );
 
-                        // Title with app colors
-                        document.add(new Paragraph("BOOKING CONFIRMATION")
+                        // Title
+                        mainCell.add(new Paragraph("BOOKING CONFIRMATION")
                                 .setFontSize(20)
                                 .setBold()
                                 .setTextAlignment(TextAlignment.CENTER)
@@ -265,7 +289,7 @@ public class ThankYouActivity extends AppCompatActivity {
                         String bookingIdText = tvBookingId.getText().toString();
                         String bookingId = bookingIdText.replace("Booking ID: ", "").trim();
 
-                        // Add booking ID with highlight using accent color and background
+                        // Add booking ID with highlight
                         Table bookingIdTable = new Table(UnitValue.createPercentArray(new float[]{1}))
                                 .setWidth(UnitValue.createPercentValue(100))
                                 .setMarginBottom(20);
@@ -282,10 +306,10 @@ public class ThankYouActivity extends AppCompatActivity {
                                 .setBorder(null);
 
                         bookingIdTable.addCell(bookingIdCell);
-                        document.add(bookingIdTable);
+                        mainCell.add(bookingIdTable);
 
                         // Customer Information Section
-                        document.add(new Paragraph("CUSTOMER DETAILS")
+                        mainCell.add(new Paragraph("CUSTOMER DETAILS")
                                 .setFontSize(14)
                                 .setBold()
                                 .setFontColor(primaryColor)
@@ -300,7 +324,7 @@ public class ThankYouActivity extends AppCompatActivity {
                                 .setWidth(UnitValue.createPercentValue(100))
                                 .setMarginBottom(15);
 
-                        // Add user details to table with app colors and backgrounds
+                        // Add user details to table
                         for (String line : userLines) {
                             String[] parts = line.split(":", 2);
                             if (parts.length == 2) {
@@ -314,10 +338,10 @@ public class ThankYouActivity extends AppCompatActivity {
                                         .setPadding(8));
                             }
                         }
-                        document.add(userTable);
+                        mainCell.add(userTable);
 
                         // Trip Information Section
-                        document.add(new Paragraph("TRIP DETAILS")
+                        mainCell.add(new Paragraph("TRIP DETAILS")
                                 .setFontSize(14)
                                 .setBold()
                                 .setFontColor(primaryColor)
@@ -328,7 +352,7 @@ public class ThankYouActivity extends AppCompatActivity {
                                 .setWidth(UnitValue.createPercentValue(100))
                                 .setMarginBottom(15);
 
-                        // Add pickup details with background
+                        // Add pickup details
                         String pickupText = tvPickupDetails.getText().toString();
                         tripTable.addCell(new Cell()
                                 .add(new Paragraph("Pickup:").setBold().setFontColor(whiteText).setFont(unicodeFont))
@@ -339,7 +363,7 @@ public class ThankYouActivity extends AppCompatActivity {
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(8));
 
-                        // Add dropoff details with background
+                        // Add dropoff details
                         String dropoffText = tvDropoffDetails.getText().toString();
                         tripTable.addCell(new Cell()
                                 .add(new Paragraph("Drop-off:").setBold().setFontColor(whiteText).setFont(unicodeFont))
@@ -350,10 +374,10 @@ public class ThankYouActivity extends AppCompatActivity {
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(8));
 
-                        document.add(tripTable);
+                        mainCell.add(tripTable);
 
                         // Payment Information Section
-                        document.add(new Paragraph("PAYMENT DETAILS")
+                        mainCell.add(new Paragraph("PAYMENT DETAILS")
                                 .setFontSize(14)
                                 .setBold()
                                 .setFontColor(primaryColor)
@@ -364,7 +388,7 @@ public class ThankYouActivity extends AppCompatActivity {
                                 .setWidth(UnitValue.createPercentValue(100))
                                 .setMarginBottom(20);
 
-                        // Add payment method with background
+                        // Add payment method
                         String paymentText = tvPaymentDetails.getText().toString();
                         paymentTable.addCell(new Cell()
                                 .add(new Paragraph("Payment Method:").setBold().setFontColor(whiteText).setFont(unicodeFont))
@@ -375,7 +399,7 @@ public class ThankYouActivity extends AppCompatActivity {
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(8));
 
-                        // Add total amount with highlighting using success green and background
+                        // Add total amount
                         DeviceRgb successColor = getColorFromResource(R.color.success_green);
                         paymentTable.addCell(new Cell()
                                 .add(new Paragraph("Total Amount:").setBold().setFontColor(whiteText).setFont(unicodeFont))
@@ -390,33 +414,48 @@ public class ThankYouActivity extends AppCompatActivity {
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(8));
 
-                        document.add(paymentTable);
+                        mainCell.add(paymentTable);
 
                         // Footer with thank you message
-                        document.add(new Paragraph("")
+                        mainCell.add(new Paragraph("")
                                 .setHeight(1)
                                 .setBorder(new SolidBorder(dividerColor, 1))
                                 .setMarginTop(20)
                                 .setMarginBottom(15)
                         );
 
-                        document.add(new Paragraph("Thank you for choosing our Car Booking service!")
+                        mainCell.add(new Paragraph("Thank you for choosing our Car Booking service!")
                                 .setFontSize(12)
                                 .setTextAlignment(TextAlignment.CENTER)
                                 .setFontColor(accentColor)
                                 .setFont(unicodeFont)
                                 .setItalic());
 
-                        document.add(new Paragraph("This is an electronically generated document and requires no signature.")
+                        mainCell.add(new Paragraph("This is an electronically generated document and requires no signature.")
                                 .setFontSize(8)
                                 .setTextAlignment(TextAlignment.CENTER)
                                 .setFontColor(whiteText)
                                 .setFont(unicodeFont)
                                 .setMarginTop(5));
 
+                        // Add the main cell to the container and the container to the document
+                        mainContainer.addCell(mainCell);
+                        document.add(mainContainer);
+
                         document.close();
                         outputStream.close();
                         Toast.makeText(this, "PDF created successfully", Toast.LENGTH_SHORT).show();
+
+                        // Navigate back to Homepage after PDF is created successfully
+                        new android.os.Handler().postDelayed(() -> {
+                            Intent intent = new Intent(ThankYouActivity.this, com.midterm.mobiledesignfinalterm.homepage.Homepage.class);
+                            intent.putExtra("user_id", userId);
+                            intent.putExtra("user_name", userName);
+                            intent.putExtra("user_phone", userPhone);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            finish();
+                        }, 500);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
