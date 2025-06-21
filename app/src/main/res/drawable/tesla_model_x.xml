@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="80dp"
+    android:viewportWidth="120"
+    android:viewportHeight="80">
+
+    <!-- Tesla Model X SUV silhouette -->
+    <!-- Car body -->
+    <path
+        android:fillColor="#2C3E50"
+        android:pathData="M10,45L110,45L110,55L105,60L100,60L95,55L25,55L20,60L15,60L10,55Z"/>
+
+    <!-- Car roof -->
+    <path
+        android:fillColor="#34495E"
+        android:pathData="M20,30L100,30L105,35L105,45L15,45L15,35Z"/>
+
+    <!-- Windshield -->
+    <path
+        android:fillColor="#85C1E9"
+        android:pathData="M25,30L95,30L100,35L100,40L20,40L20,35Z"/>
+
+    <!-- Wheels -->
+    <path
+        android:fillColor="#1C2833"
+        android:pathData="M22,55m8,0a8,8 0,1 1,16 0a8,8 0,1 1,-16 0"/>
+    <path
+        android:fillColor="#1C2833"
+        android:pathData="M82,55m8,0a8,8 0,1 1,16 0a8,8 0,1 1,-16 0"/>
+
+    <!-- Wheel rims -->
+    <path
+        android:fillColor="#BDC3C7"
+        android:pathData="M25,55m5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"/>
+    <path
+        android:fillColor="#BDC3C7"
+        android:pathData="M85,55m5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"/>
+
+    <!-- Headlights -->
+    <path
+        android:fillColor="#F8C471"
+        android:pathData="M102,40L108,40L108,45L102,45Z"/>
+
+    <!-- Side windows -->
+    <path
+        android:fillColor="#85C1E9"
+        android:pathData="M30,32L50,32L50,38L30,38Z"/>
+    <path
+        android:fillColor="#85C1E9"
+        android:pathData="M70,32L90,32L90,38L70,38Z"/>
+
+    <!-- Door handles -->
+    <path
+        android:fillColor="#7F8C8D"
+        android:pathData="M44,48m1,0a1,1 0,1 1,2 0a1,1 0,1 1,-2 0"/>
+    <path
+        android:fillColor="#7F8C8D"
+        android:pathData="M74,48m1,0a1,1 0,1 1,2 0a1,1 0,1 1,-2 0"/>
+</vector>

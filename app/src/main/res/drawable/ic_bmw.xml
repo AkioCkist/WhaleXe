@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- BMW roundel logo -->
+    <path
+        android:fillColor="#0066B2"
+        android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,4C7.58,4 4,7.58 4,12s3.58,8 8,8 8,-3.58 8,-8 -3.58,-8 -8,-8z"/>
+    <path
+        android:fillColor="#0066B2"
+        android:pathData="M6,12L12,6L12,12L6,12Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,6L18,12L12,12L12,6Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M6,12L12,18L12,12L6,12Z"/>
+    <path
+        android:fillColor="#0066B2"
+        android:pathData="M12,12L18,12L12,18L12,12Z"/>
+</vector>

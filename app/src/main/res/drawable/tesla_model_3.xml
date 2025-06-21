@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="80dp"
+    android:viewportWidth="120"
+    android:viewportHeight="80">
+
+    <!-- Tesla Model 3 sedan silhouette -->
+    <!-- Car body -->
+    <path
+        android:fillColor="#E74C3C"
+        android:pathData="M10,50L110,50L110,58L105,62L100,62L95,58L25,58L20,62L15,62L10,58Z"/>
+
+    <!-- Car roof (lower profile than Model X) -->
+    <path
+        android:fillColor="#C0392B"
+        android:pathData="M25,35L95,35L100,40L100,50L20,50L20,40Z"/>
+
+    <!-- Windshield -->
+    <path
+        android:fillColor="#85C1E9"
+        android:pathData="M30,35L90,35L95,40L95,45L25,45L25,40Z"/>
+
+    <!-- Wheels -->
+    <path
+        android:fillColor="#1C2833"
+        android:pathData="M24,58m8,0a8,8 0,1 1,16 0a8,8 0,1 1,-16 0"/>
+    <path
+        android:fillColor="#1C2833"
+        android:pathData="M80,58m8,0a8,8 0,1 1,16 0a8,8 0,1 1,-16 0"/>
+
+    <!-- Wheel rims -->
+    <path
+        android:fillColor="#BDC3C7"
+        android:pathData="M27,58m5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"/>
+    <path
+        android:fillColor="#BDC3C7"
+        android:pathData="M83,58m5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"/>
+
+    <!-- Headlights -->
+    <path
+        android:fillColor="#F8C471"
+        android:pathData="M100,45L106,45L106,50L100,50Z"/>
+
+    <!-- Side windows -->
+    <path
+        android:fillColor="#85C1E9"
+        android:pathData="M35,37L55,37L55,43L35,43Z"/>
+    <path
+        android:fillColor="#85C1E9"
+        android:pathData="M65,37L85,37L85,43L65,43Z"/>
+
+    <!-- Door handles -->
+    <path
+        android:fillColor="#7F8C8D"
+        android:pathData="M44,52m1,0a1,1 0,1 1,2 0a1,1 0,1 1,-2 0"/>
+    <path
+        android:fillColor="#7F8C8D"
+        android:pathData="M74,52m1,0a1,1 0,1 1,2 0a1,1 0,1 1,-2 0"/>
+
+    <!-- Tesla logo position -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M58,42m2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0"/>
+</vector>

@@ -1,0 +1,14 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_dashboard"
+        android:icon="@drawable/dashboard"
+        android:title="Dashboard"/>
+    <item
+        android:id="@+id/nav_profile"
+        android:icon="@drawable/avatar"
+        android:title="My Profile"/>
+    <item
+        android:id="@+id/nav_favorites"
+        android:icon="@drawable/favourite"
+        android:title="Favorites"/>
+</menu>

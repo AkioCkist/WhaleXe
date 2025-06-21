@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_primary"
+    android:padding="35dp">
+
+    <!-- Header -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="30dp">
+
+        <ImageView
+            android:id="@+id/iv_back"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+
+            android:src="@drawable/ic_arrow_back" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="User Information - Step 2/3"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
+
+    <!-- Step Indicator -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="30dp"
+        android:gravity="center">
+
+        <View
+            android:layout_width="60dp"
+            android:layout_height="4dp"
+            android:background="#9AFF00"
+            android:layout_marginStart="5dp" />
+
+        <View
+            android:layout_width="60dp"
+            android:layout_height="4dp"
+            android:background="#9AFF00"
+            android:layout_marginStart="5dp" />
+
+        <View
+            android:layout_width="60dp"
+            android:layout_height="4dp"
+            android:background="#555555"
+            android:layout_marginStart="5dp" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Welcome Message -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Verify Documents"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="20dp" />
+
+            <!-- Full Name -->
+            <EditText
+                android:id="@+id/et_full_name"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@color/background_secondary"
+                android:hint="Full Name"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#AAAAAA"
+                android:padding="15dp"
+                android:layout_marginBottom="15dp"
+                android:inputType="textPersonName" />
+
+            <!-- Email -->
+            <EditText
+                android:id="@+id/et_email"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@color/background_secondary"
+                android:hint="Email Address"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#AAAAAA"
+                android:padding="15dp"
+                android:layout_marginBottom="15dp"
+                android:inputType="textEmailAddress" />
+
+            <!-- Phone -->
+            <EditText
+                android:id="@+id/et_phone"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@color/background_secondary"
+                android:hint="Phone Number"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#AAAAAA"
+                android:padding="15dp"
+                android:layout_marginBottom="15dp"
+                android:inputType="phone" />
+
+            <!-- Citizen ID Number (CCCD) -->
+            <EditText
+                android:id="@+id/et_aadhar_number"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@color/background_secondary"
+                android:hint="Citizen ID Number (CCCD)"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#AAAAAA"
+                android:padding="15dp"
+                android:layout_marginBottom="15dp"
+                android:inputType="number" />
+
+            <!-- Tax Identification Number (MST) -->
+            <EditText
+                android:id="@+id/et_pan_number"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@color/background_secondary"
+                android:hint="Tax Identification Number (MST)"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#AAAAAA"
+                android:padding="15dp"
+                android:layout_marginBottom="20dp"
+                android:inputType="number" />
+
+            <!-- Terms and Conditions -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="30dp"
+                android:gravity="center_vertical">
+
+                <CheckBox
+                    android:id="@+id/cb_terms_accepted"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="#9AFF00" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="I agree to the Terms of Services"
+                    android:textColor="#9AFF00"
+                    android:textSize="14sp"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Next Button -->
+    <Button
+        android:id="@+id/btn_next_step"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@drawable/button_background"
+        android:text="Verify"
+        android:textColor="#000000"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginTop="20dp" />
+
+</LinearLayout>
