@@ -28,6 +28,14 @@ import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import com.itextpdf.layout.properties.VerticalAlignment;
+// Add font imports
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.io.font.FontProgram;
+import com.itextpdf.io.font.FontProgramFactory;
+import com.itextpdf.io.font.PdfEncodings;
+import com.itextpdf.io.font.constants.StandardFonts;
+
 // Firebase imports
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.DocumentReference;
@@ -195,6 +203,10 @@ public class ThankYouActivity extends AppCompatActivity {
                         PdfDocument pdf = new PdfDocument(writer);
                         Document document = new Document(pdf, PageSize.A4);
 
+                        // Create a Unicode font that supports Vietnamese characters
+                        PdfFont unicodeFont = PdfFontFactory.createFont(StandardFonts.TIMES_ROMAN, PdfEncodings.IDENTITY_H);
+                        document.setFont(unicodeFont);
+
                         // Draw background color on the page
                         PdfPage page = pdf.addNewPage();
                         PdfCanvas canvas = new PdfCanvas(page);
@@ -212,10 +224,10 @@ public class ThankYouActivity extends AppCompatActivity {
 
                         // Company info in left column with background
                         Cell companyCell = new Cell()
-                                .add(new Paragraph("Whale Xe").setBold().setFontSize(16).setFontColor(primaryColor))
-                                .add(new Paragraph("More than rentals - We deliver happiness").setFontColor(whiteText))
-                                .add(new Paragraph("https://car-app-web-design.vercel.app/").setFontColor(whiteText))
-                                .add(new Paragraph("contact@whalexe.com").setFontColor(whiteText))
+                                .add(new Paragraph("Whale Xe").setBold().setFontSize(16).setFontColor(primaryColor).setFont(unicodeFont))
+                                .add(new Paragraph("More than rentals - We deliver happiness").setFontColor(whiteText).setFont(unicodeFont))
+                                .add(new Paragraph("https://car-app-web-design.vercel.app/").setFontColor(whiteText).setFont(unicodeFont))
+                                .add(new Paragraph("contact@whalexe.com").setFontColor(whiteText).setFont(unicodeFont))
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(10)
                                 .setBorder(null);
@@ -224,7 +236,7 @@ public class ThankYouActivity extends AppCompatActivity {
                         SimpleDateFormat dateFormatter = new SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault());
                         String currentDate = dateFormatter.format(new Date());
                         Cell dateCell = new Cell()
-                                .add(new Paragraph("Date: " + currentDate).setTextAlignment(TextAlignment.RIGHT).setFontColor(whiteText))
+                                .add(new Paragraph("Date: " + currentDate).setTextAlignment(TextAlignment.RIGHT).setFontColor(whiteText).setFont(unicodeFont))
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(10)
                                 .setBorder(null);
@@ -246,6 +258,7 @@ public class ThankYouActivity extends AppCompatActivity {
                                 .setBold()
                                 .setTextAlignment(TextAlignment.CENTER)
                                 .setFontColor(primaryColor)
+                                .setFont(unicodeFont)
                                 .setMarginBottom(20));
 
                         // Extract booking ID from the text view
@@ -262,7 +275,8 @@ public class ThankYouActivity extends AppCompatActivity {
                                         .setBold()
                                         .setTextAlignment(TextAlignment.CENTER)
                                         .setFontSize(14)
-                                        .setFontColor(accentColor))
+                                        .setFontColor(accentColor)
+                                        .setFont(unicodeFont))
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(12)
                                 .setBorder(null);
@@ -275,6 +289,7 @@ public class ThankYouActivity extends AppCompatActivity {
                                 .setFontSize(14)
                                 .setBold()
                                 .setFontColor(primaryColor)
+                                .setFont(unicodeFont)
                                 .setMarginBottom(10));
 
                         // Parse user details from text view
@@ -290,11 +305,11 @@ public class ThankYouActivity extends AppCompatActivity {
                             String[] parts = line.split(":", 2);
                             if (parts.length == 2) {
                                 userTable.addCell(new Cell()
-                                        .add(new Paragraph(parts[0].trim() + ":").setBold().setFontColor(whiteText))
+                                        .add(new Paragraph(parts[0].trim() + ":").setBold().setFontColor(whiteText).setFont(unicodeFont))
                                         .setBackgroundColor(backgroundSecondary)
                                         .setPadding(8));
                                 userTable.addCell(new Cell()
-                                        .add(new Paragraph(parts[1].trim()).setFontColor(whiteText))
+                                        .add(new Paragraph(parts[1].trim()).setFontColor(whiteText).setFont(unicodeFont))
                                         .setBackgroundColor(backgroundSecondary)
                                         .setPadding(8));
                             }
@@ -306,6 +321,7 @@ public class ThankYouActivity extends AppCompatActivity {
                                 .setFontSize(14)
                                 .setBold()
                                 .setFontColor(primaryColor)
+                                .setFont(unicodeFont)
                                 .setMarginBottom(10));
 
                         Table tripTable = new Table(UnitValue.createPercentArray(new float[]{1, 2}))
@@ -315,22 +331,22 @@ public class ThankYouActivity extends AppCompatActivity {
                         // Add pickup details with background
                         String pickupText = tvPickupDetails.getText().toString();
                         tripTable.addCell(new Cell()
-                                .add(new Paragraph("Pickup:").setBold().setFontColor(whiteText))
+                                .add(new Paragraph("Pickup:").setBold().setFontColor(whiteText).setFont(unicodeFont))
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(8));
                         tripTable.addCell(new Cell()
-                                .add(new Paragraph(pickupText.replace("Pickup: ", "")).setFontColor(whiteText))
+                                .add(new Paragraph(pickupText.replace("Pickup: ", "")).setFontColor(whiteText).setFont(unicodeFont))
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(8));
 
                         // Add dropoff details with background
                         String dropoffText = tvDropoffDetails.getText().toString();
                         tripTable.addCell(new Cell()
-                                .add(new Paragraph("Drop-off:").setBold().setFontColor(whiteText))
+                                .add(new Paragraph("Drop-off:").setBold().setFontColor(whiteText).setFont(unicodeFont))
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(8));
                         tripTable.addCell(new Cell()
-                                .add(new Paragraph(dropoffText.replace("Drop-off: ", "")).setFontColor(whiteText))
+                                .add(new Paragraph(dropoffText.replace("Drop-off: ", "")).setFontColor(whiteText).setFont(unicodeFont))
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(8));
 
@@ -341,6 +357,7 @@ public class ThankYouActivity extends AppCompatActivity {
                                 .setFontSize(14)
                                 .setBold()
                                 .setFontColor(primaryColor)
+                                .setFont(unicodeFont)
                                 .setMarginBottom(10));
 
                         Table paymentTable = new Table(UnitValue.createPercentArray(new float[]{1, 2}))
@@ -350,25 +367,26 @@ public class ThankYouActivity extends AppCompatActivity {
                         // Add payment method with background
                         String paymentText = tvPaymentDetails.getText().toString();
                         paymentTable.addCell(new Cell()
-                                .add(new Paragraph("Payment Method:").setBold().setFontColor(whiteText))
+                                .add(new Paragraph("Payment Method:").setBold().setFontColor(whiteText).setFont(unicodeFont))
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(8));
                         paymentTable.addCell(new Cell()
-                                .add(new Paragraph(paymentText.replace("Payment: ", "")).setFontColor(whiteText))
+                                .add(new Paragraph(paymentText.replace("Payment: ", "")).setFontColor(whiteText).setFont(unicodeFont))
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(8));
 
                         // Add total amount with highlighting using success green and background
                         DeviceRgb successColor = getColorFromResource(R.color.success_green);
                         paymentTable.addCell(new Cell()
-                                .add(new Paragraph("Total Amount:").setBold().setFontColor(whiteText))
+                                .add(new Paragraph("Total Amount:").setBold().setFontColor(whiteText).setFont(unicodeFont))
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(8));
                         paymentTable.addCell(new Cell()
                                 .add(new Paragraph(tvTotalAmount.getText().toString())
                                         .setBold()
                                         .setFontSize(14)
-                                        .setFontColor(successColor))
+                                        .setFontColor(successColor)
+                                        .setFont(unicodeFont))
                                 .setBackgroundColor(backgroundSecondary)
                                 .setPadding(8));
 
@@ -386,12 +404,14 @@ public class ThankYouActivity extends AppCompatActivity {
                                 .setFontSize(12)
                                 .setTextAlignment(TextAlignment.CENTER)
                                 .setFontColor(accentColor)
+                                .setFont(unicodeFont)
                                 .setItalic());
 
                         document.add(new Paragraph("This is an electronically generated document and requires no signature.")
                                 .setFontSize(8)
                                 .setTextAlignment(TextAlignment.CENTER)
                                 .setFontColor(whiteText)
+                                .setFont(unicodeFont)
                                 .setMarginTop(5));
 
                         document.close();
