@@ -218,6 +218,13 @@ public class CarListing extends AppCompatActivity implements CarListingAdapter.O
                                 car.setStatus(document.getString("status"));
                                 car.setFuel_consumption(document.getString("fuel_consumption"));
 
+                                // Skip vehicles with "rented" or "maintenanced" status
+                                String status = car.getStatus();
+                                if (status != null && (status.equalsIgnoreCase("rented") || status.equalsIgnoreCase("maintenanced"))) {
+                                    Log.d(TAG, "Skipping vehicle with status: " + status + ", Name: " + car.getName());
+                                    continue; // Skip this car and move to the next one
+                                }
+
                                 // Get primary image URL
                                 Map<String, Object> images = (Map<String, Object>) document.get("images");
                                 if (images != null) {
