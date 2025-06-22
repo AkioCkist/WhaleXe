@@ -53,7 +53,7 @@ public class BookingHistoryAdapter extends RecyclerView.Adapter<BookingHistoryAd
         holder.bookingDate.setText(dateRange);
 
         // Display locations
-        String locText = "From: " + booking.getPickupLocation() + " --- " + " To: " + booking.getDropoffLocation();
+        String locText = "From: " + booking.getPickupLocation() + "  -" + " To: " + booking.getDropoffLocation();
         holder.locations.setText(locText);
 
         // Display times
