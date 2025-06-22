@@ -384,9 +384,19 @@ public class Login extends AppCompatActivity {
         }
     }
 
-    // Password toggle and animation methods (unchanged)
+    // Password toggle and animation methods (improved)
     private void setupPasswordToggle() {
-        buttonTogglePassword.setOnClickListener(v -> togglePasswordVisibility());
+        // Set touch listener to handle touch events on toggle button
+        View.OnTouchListener touchListener = (v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+                togglePasswordVisibility();
+                return true;
+            }
+            return false;
+        };
+
+        // Apply touch listener directly to the button
+        buttonTogglePassword.setOnTouchListener(touchListener);
     }
 
     private void togglePasswordVisibility() {
@@ -476,4 +486,3 @@ public class Login extends AppCompatActivity {
         startActivity(intent);
     }
 }
-
