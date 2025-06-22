@@ -43,12 +43,29 @@ public class BookingHistoryAdapter extends RecyclerView.Adapter<BookingHistoryAd
         Vehicle vehicle = detail.getVehicle();
 
         holder.carName.setText(vehicle.getName());
+        // Set booking ID
+        holder.bookingId.setText("ID: " + booking.getBookingId());
 
-        String dateRange = String.format("From: %s To: %s", booking.getPickup_date(), booking.getReturn_date());
+        // Display date range
+        String dateRange = booking.getPickupDate() != null && !booking.getPickupDate().isEmpty()
+                ? booking.getPickupDate() + " - " + booking.getDropoffDate()
+                : booking.getPickup_date() + " - " + booking.getReturn_date();
         holder.bookingDate.setText(dateRange);
 
+        // Display locations
+        String locText = "From: " + booking.getPickupLocation() + " --- " + " To: " + booking.getDropoffLocation();
+        holder.locations.setText(locText);
+
+        // Display times
+        String timeText = booking.getPickupTime() + " - " + booking.getDropoffTime();
+        holder.times.setText(timeText);
+
+        // Total price
         NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
-        holder.totalPrice.setText("Total: " + currencyFormat.format(booking.getTotal_price()));
+        holder.totalPrice.setText("Total: " + currencyFormat.format(
+                booking.getTotalAmount() != null
+                        ? Double.parseDouble(booking.getTotalAmount())
+                        : booking.getTotal_price()));
 
         holder.status.setText(booking.getStatus().substring(0, 1).toUpperCase() + booking.getStatus().substring(1));
 
@@ -87,13 +104,16 @@ public class BookingHistoryAdapter extends RecyclerView.Adapter<BookingHistoryAd
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView carImage;
-        TextView carName, bookingDate, totalPrice, status;
+        TextView carName, bookingId, bookingDate, locations, times, totalPrice, status;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             carImage = itemView.findViewById(R.id.imageViewCar);
             carName = itemView.findViewById(R.id.textViewCarName);
+            bookingId = itemView.findViewById(R.id.textViewBookingId);
             bookingDate = itemView.findViewById(R.id.textViewBookingDate);
+            locations = itemView.findViewById(R.id.textViewLocations);
+            times = itemView.findViewById(R.id.textViewTimes);
             totalPrice = itemView.findViewById(R.id.textViewTotalPrice);
             status = itemView.findViewById(R.id.textViewStatus);
         }

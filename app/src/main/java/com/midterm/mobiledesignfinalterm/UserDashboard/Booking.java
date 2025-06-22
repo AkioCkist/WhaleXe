@@ -24,10 +24,39 @@ public class Booking {
     private String totalAmount;
     private Timestamp createdAt;
 
+    // Document ID
+    private String id;
+
+    // Added fields for vehicle details
+    private String vehicleName;
+    private String vehicleImage;
+
+    // Fields for old and new location/time
+    @com.google.firebase.firestore.PropertyName("pickup_location")
+    private String oldPickupLocation;
+    @com.google.firebase.firestore.PropertyName("return_location")
+    private String oldDropoffLocation;
+    @com.google.firebase.firestore.PropertyName("pickupLocation")
+    private String newPickupLocation;
+    @com.google.firebase.firestore.PropertyName("dropoffLocation")
+    private String newDropoffLocation;
+    @com.google.firebase.firestore.PropertyName("pickup_time")
+    private String oldPickupTime;
+    @com.google.firebase.firestore.PropertyName("return_time")
+    private String oldDropoffTime;
+    @com.google.firebase.firestore.PropertyName("pickupTime")
+    private String newPickupTime;
+    @com.google.firebase.firestore.PropertyName("dropoffTime")
+    private String newDropoffTime;
+
     // Constructor
     public Booking() {
         // Required empty constructor for Firestore
     }
+
+    // Getters and setters for document ID
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
     // Getters and setters for old format
     public long getRenter_id() { return renter_id; }
@@ -72,6 +101,89 @@ public class Booking {
 
     public Timestamp getCreatedAt() { return createdAt; }
     public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+
+    // Setters for Firestore mapping
+    @com.google.firebase.firestore.PropertyName("pickup_location")
+    public void setOldPickupLocation(String val) { this.oldPickupLocation = val; }
+    @com.google.firebase.firestore.PropertyName("return_location")
+    public void setOldDropoffLocation(String val) { this.oldDropoffLocation = val; }
+    @com.google.firebase.firestore.PropertyName("pickupLocation")
+    public void setNewPickupLocation(String val) { this.newPickupLocation = val; }
+    @com.google.firebase.firestore.PropertyName("dropoffLocation")
+    public void setNewDropoffLocation(String val) { this.newDropoffLocation = val; }
+    @com.google.firebase.firestore.PropertyName("pickup_time")
+    public void setOldPickupTime(String val) { this.oldPickupTime = val; }
+    @com.google.firebase.firestore.PropertyName("return_time")
+    public void setOldDropoffTime(String val) { this.oldDropoffTime = val; }
+    @com.google.firebase.firestore.PropertyName("pickupTime")
+    public void setNewPickupTime(String val) { this.newPickupTime = val; }
+    @com.google.firebase.firestore.PropertyName("dropoffTime")
+    public void setNewDropoffTime(String val) { this.newDropoffTime = val; }
+
+    // Unified getters for use in UI
+    public String getPickupLocation() {
+        if (newPickupLocation != null && !newPickupLocation.isEmpty()) return newPickupLocation;
+        if (oldPickupLocation != null && !oldPickupLocation.isEmpty()) return oldPickupLocation;
+        return "";
+    }
+    public String getDropoffLocation() {
+        if (newDropoffLocation != null && !newDropoffLocation.isEmpty()) return newDropoffLocation;
+        if (oldDropoffLocation != null && !oldDropoffLocation.isEmpty()) return oldDropoffLocation;
+        return "";
+    }
+    public String getPickupTime() {
+        if (newPickupTime != null && !newPickupTime.isEmpty()) return newPickupTime;
+        if (oldPickupTime != null && !oldPickupTime.isEmpty()) return oldPickupTime;
+        return "";
+    }
+    public String getDropoffTime() {
+        if (newDropoffTime != null && !newDropoffTime.isEmpty()) return newDropoffTime;
+        if (oldDropoffTime != null && !oldDropoffTime.isEmpty()) return oldDropoffTime;
+        return "";
+    }
+
+    // New methods for vehicle image and name
+    public String getVehicleImage() {
+        return vehicleImage;
+    }
+
+    public void setVehicleImage(String vehicleImage) {
+        this.vehicleImage = vehicleImage;
+    }
+
+    public String getVehicleName() {
+        return vehicleName;
+    }
+
+    public void setVehicleName(String vehicleName) {
+        this.vehicleName = vehicleName;
+    }
+
+    /**
+     * Gets the vehicle ID (works for both old and new format)
+     * @return String representation of the vehicle ID
+     */
+    public String getVehicleId() {
+        if (carId != null && !carId.isEmpty()) {
+            return carId;
+        }
+        return String.valueOf(vehicle_id);
+    }
+
+    /**
+     * Format the final price as currency
+     */
+    public String getFormattedFinalPrice() {
+        if (totalAmount != null && !totalAmount.isEmpty()) {
+            try {
+                double amount = Double.parseDouble(totalAmount);
+                return String.format("₫%.0f", amount);
+            } catch (NumberFormatException e) {
+                return totalAmount;
+            }
+        }
+        return String.format("₫%.0f", total_price);
+    }
 
     @Override
     public String toString() {

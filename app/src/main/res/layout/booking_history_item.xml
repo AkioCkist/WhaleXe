@@ -19,43 +19,72 @@
             android:layout_width="120dp"
             android:layout_height="90dp"
             android:scaleType="centerCrop"
-            android:src="@drawable/ic_profile" /> <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:layout_marginStart="16dp"
-        android:gravity="center_vertical">
+            android:src="@drawable/ic_profile" />
 
-        <TextView
-            android:id="@+id/textViewCarName"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="McLaren 720S 2024"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="16dp"
+            android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/textViewBookingDate"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="From: 18/06/2025 To: 20/06/2025"
-            android:textColor="@android:color/darker_gray"
-            android:textSize="12sp"
-            android:layout_marginTop="4dp"/>
+            <TextView
+                android:id="@+id/textViewCarName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="McLaren 720S 2024"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/textViewTotalPrice"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Total: 19,000,000 VND"
-            android:textColor="@color/purple_200"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp"/>
+            <TextView
+                android:id="@+id/textViewBookingId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ID: BOOK1234"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="12sp"
+                android:layout_marginTop="2dp"/>
 
-    </LinearLayout>
+            <TextView
+                android:id="@+id/textViewBookingDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="From: 18/06/2025 To: 20/06/2025"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="12sp"
+                android:layout_marginTop="2dp"/>
+
+            <TextView
+                android:id="@+id/textViewLocations"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="From: Ho Chi Minh --- To: Ha Noi"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="12sp"
+                android:layout_marginTop="2dp"/>
+
+            <TextView
+                android:id="@+id/textViewTimes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10:00 AM - 6:00 PM"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="12sp"
+                android:layout_marginTop="2dp"/>
+
+            <TextView
+                android:id="@+id/textViewTotalPrice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Total: 19,000,000 VND"
+                android:textColor="@color/purple_200"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginTop="4dp"/>
+
+        </LinearLayout>
 
         <TextView
             android:id="@+id/textViewStatus"
@@ -64,7 +93,8 @@
             android:text="Confirmed"
             android:paddingHorizontal="8dp"
             android:paddingVertical="4dp"
-            android:background="@drawable/status_background"  android:textColor="@android:color/white"
+            android:background="@drawable/status_background"
+            android:textColor="@android:color/white"
             android:textSize="10sp"
             android:textStyle="bold"
             android:layout_gravity="top|end"/>
