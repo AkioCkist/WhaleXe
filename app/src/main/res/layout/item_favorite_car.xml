@@ -126,13 +126,17 @@
 
                     <TextView
                         android:id="@+id/tv_FRCardTransmission"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_horizontal"
                         android:layout_marginTop="4dp"
                         android:text="Automatic"
                         android:textColor="#AEAEAE"
-                        android:textSize="12sp" />
+                        android:textSize="12sp"
+                        android:textAlignment="center"
+                        android:gravity="center_horizontal"
+                        android:maxLines="2"
+                        android:ellipsize="end" />
                 </LinearLayout>
 
                 <!-- Seats -->
