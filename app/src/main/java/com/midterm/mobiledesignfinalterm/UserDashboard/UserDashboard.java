@@ -100,8 +100,9 @@ public class UserDashboard extends AppCompatActivity {
 
         // Set the default fragment without animation initially
         if (savedInstanceState == null) {
+            // Pass userId to the DashboardFragment
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                    new DashboardFragment()).commit();
+                    DashboardFragment.newInstance(userId)).commit();
             previousSelectedItemId = R.id.nav_dashboard;
         }
 
@@ -430,7 +431,8 @@ public class UserDashboard extends AppCompatActivity {
 
                 Fragment selectedFragment = null;
                 if (newSelectedItemId == R.id.nav_dashboard) {
-                    selectedFragment = new DashboardFragment();
+                    // Pass userId to the DashboardFragment
+                    selectedFragment = DashboardFragment.newInstance(userId);
                 } else if (newSelectedItemId == R.id.nav_profile) {
                     selectedFragment = new ProfileFragment();
                 } else if (newSelectedItemId == R.id.nav_favorites) {
@@ -454,16 +456,6 @@ public class UserDashboard extends AppCompatActivity {
 
     // --- Fragment classes ---
 
-    /**
-     * Placeholder Fragment for the Dashboard.
-     */
-    public static class DashboardFragment extends Fragment {
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            return inflater.inflate(R.layout.fragment_dashboard, container, false);
-        }
-    }
 
     /**
      * Fragment for updating user profile using Firestore.
