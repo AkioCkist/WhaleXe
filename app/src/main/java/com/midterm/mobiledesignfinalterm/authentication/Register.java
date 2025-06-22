@@ -1,6 +1,6 @@
 package com.midterm.mobiledesignfinalterm.authentication;
 
-import android.content.Intent; // Import for starting a new activity
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -16,19 +16,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.midterm.mobiledesignfinalterm.R;
-// Assuming you have a LoginActivity or similar to navigate to after login
-// import com.midterm.mobiledesignfinalterm.activity.LoginActivity; // Example: Your login activity
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.mindrot.jbcrypt.BCrypt;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,9 +38,7 @@ public class Register extends AppCompatActivity {
     private ImageView btnBack;
 
     private static final String PHONE_NUMBER_PATTERN = "^[0-9]{10,15}$";
-    // Use 10.0.2.2 for Android Emulator to access localhost of the host machine
-    private static final String REGISTER_API_URL = "http://10.0.2.2/myapi/register.php";
-    private RequestQueue requestQueue;
+    private FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +48,7 @@ public class Register extends AppCompatActivity {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         WindowInsetsControllerCompat windowInsetsController =
                 WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
-        windowInsetsController.setAppearanceLightStatusBars(false); // Assuming dark icons for light status bar
+        windowInsetsController.setAppearanceLightStatusBars(false);
 
         View rootView = findViewById(android.R.id.content);
         playPopupAnimation(rootView);
@@ -63,8 +56,8 @@ public class Register extends AppCompatActivity {
         initializeViews();
         setupClickListeners();
 
-        // Initialize Volley RequestQueue
-        requestQueue = Volley.newRequestQueue(this);
+        // Initialize Firestore
+        db = FirebaseFirestore.getInstance();
     }
 
     private void playPopupAnimation(View view) {
@@ -99,15 +92,8 @@ public class Register extends AppCompatActivity {
 
     private void setupClickListeners() {
         buttonRegister.setOnClickListener(v -> animateButtonClick(v, this::handleRegister));
-
         textViewLogin.setOnClickListener(v -> handleLogin());
-
-        btnBack.setOnClickListener(v -> {
-            animateButtonClick(v, () -> {
-                // Handle back button click - finish this activity to go back to previous screen
-                finish();
-            });
-        });
+        btnBack.setOnClickListener(v -> animateButtonClick(v, this::finish));
     }
 
     private void handleRegister() {
@@ -161,90 +147,74 @@ public class Register extends AppCompatActivity {
 
         // Disable button to prevent multiple clicks
         buttonRegister.setEnabled(false);
+        buttonRegister.setText("Registering...");
 
-        // Create JSON object for the request body
-        JSONObject postData = new JSONObject();
-        try {
-            postData.put("username", name);
-            postData.put("phone_number", phoneNumber);
-            postData.put("password", password);
-        } catch (JSONException e) {
-            Log.e("RegisterActivity", "JSONException: " + e.getMessage());
-            Toast.makeText(this, "Error creating request data.", Toast.LENGTH_SHORT).show();
-            buttonRegister.setEnabled(true); // Re-enable button
-            return;
-        }
-
-        // Create Volley JSON Object Request
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, REGISTER_API_URL, postData,
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        buttonRegister.setEnabled(true); // Re-enable button
-                        try {
-                            boolean success = response.getBoolean("success");
-                            if (success) {
-                                JSONObject user = response.getJSONObject("user");
-                                String accountId = user.getString("account_id");
-                                String username = user.getString("username");
-                                String returnedPhoneNumber = user.getString("phone_number");
-
-                                Toast.makeText(Register.this, "Registration successful! Welcome " + username, Toast.LENGTH_LONG).show();
-
-                                // TODO: Navigate to your main app screen or login screen
-                                // For example, navigate to LoginActivity and finish this one
-                                // Intent intent = new Intent(Register.this, LoginActivity.class);
-                                // startActivity(intent);
-                                finish(); // Close Register activity
-
-                            } else {
-                                String errorMsg = response.optString("error", "Registration failed. Please try again.");
-                                Toast.makeText(Register.this, errorMsg, Toast.LENGTH_LONG).show();
-                                if (errorMsg.toLowerCase().contains("phone number already exists")) {
-                                    editTextPhoneNumber.setError("This phone number is already registered.");
-                                    editTextPhoneNumber.requestFocus();
-                                }
-                            }
-                        } catch (JSONException e) {
-                            Log.e("RegisterActivity", "JSONException onResponse: " + e.getMessage());
-                            Toast.makeText(Register.this, "Error parsing response.", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        buttonRegister.setEnabled(true); // Re-enable button
-                        Log.e("RegisterActivity", "VolleyError: " + error.toString());
-                        if (error.networkResponse != null) {
-                            Log.e("RegisterActivity", "VolleyError Status Code: " + error.networkResponse.statusCode);
-                            try {
-                                String responseBody = new String(error.networkResponse.data, "utf-8");
-                                JSONObject data = new JSONObject(responseBody);
-                                String message = data.optString("error", "Unknown server error");
-                                Toast.makeText(Register.this, "Server Error: " + message, Toast.LENGTH_LONG).show();
-                            } catch (Exception e) {
-                                Toast.makeText(Register.this, "Server Error: Could not parse error response.", Toast.LENGTH_LONG).show();
-                            }
+        // 1. Check if the phone number already exists in the "users" collection
+        db.collection("users").whereEqualTo("phone_number", phoneNumber)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        if (!task.getResult().isEmpty()) {
+                            // User with this phone number already exists
+                            editTextPhoneNumber.setError("This phone number is already registered.");
+                            editTextPhoneNumber.requestFocus();
+                            Toast.makeText(Register.this, "This phone number is already registered.", Toast.LENGTH_LONG).show();
+                            buttonRegister.setEnabled(true);
+                            buttonRegister.setText("Register");
                         } else {
-                            Toast.makeText(Register.this, "Registration failed. Check your network connection.", Toast.LENGTH_LONG).show();
+                            // Phone number is unique, proceed with creating the new user
+                            registerNewUserInFirestore(name, phoneNumber, password);
                         }
+                    } else {
+                        // An error occurred while checking for the user
+                        Log.e("RegisterActivity", "Error checking for existing user.", task.getException());
+                        Toast.makeText(Register.this, "Registration failed. Please try again.", Toast.LENGTH_LONG).show();
+                        buttonRegister.setEnabled(true);
+                        buttonRegister.setText("Register");
                     }
                 });
+    }
 
-        // Add the request to the RequestQueue
-        requestQueue.add(jsonObjectRequest);
+    private void registerNewUserInFirestore(String name, String phoneNumber, String password) {
+        // 2. Encrypt the password using BCrypt
+        String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt(12));
+
+        // 3. Create a user object to save to Firestore
+        Map<String, Object> user = new HashMap<>();
+        user.put("username", name);
+        user.put("phone_number", phoneNumber);
+        user.put("password_hash", hashedPassword);
+        user.put("role_id", 1L); // Assign default role "renter" (ID 1)
+        user.put("created_at", FieldValue.serverTimestamp());
+
+        // 4. Add the new user to the "users" collection
+        db.collection("users").add(user)
+                .addOnSuccessListener(documentReference -> {
+                    buttonRegister.setEnabled(true);
+                    buttonRegister.setText("Register");
+                    Toast.makeText(Register.this, "Registration successful! Welcome " + name, Toast.LENGTH_LONG).show();
+
+                    // Navigate to the Login screen after successful registration
+                    Intent intent = new Intent(Register.this, Login.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish(); // Close the Register activity
+                })
+                .addOnFailureListener(e -> {
+                    buttonRegister.setEnabled(true);
+                    buttonRegister.setText("Register");
+                    Log.e("RegisterActivity", "Error adding user to Firestore", e);
+                    Toast.makeText(Register.this, "Registration failed due to a database error.", Toast.LENGTH_LONG).show();
+                });
     }
 
     private void handleLogin() {
-        // If you have a LoginActivity, start it. Otherwise, just finish this activity.
-         Intent intent = new Intent(Register.this, Login.class);
-         startActivity(intent);
-        finish(); // Close the register activity
+        Intent intent = new Intent(Register.this, Login.class);
+        startActivity(intent);
+        finish();
     }
 
     public void onTermsTextClicked(View view) {
         checkBoxTerms.setChecked(!checkBoxTerms.isChecked());
     }
 }
-

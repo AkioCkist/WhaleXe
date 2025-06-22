@@ -20,7 +20,10 @@ import com.midterm.mobiledesignfinalterm.CarDetail.CarDetailActivity;
 import com.midterm.mobiledesignfinalterm.R;
 import com.midterm.mobiledesignfinalterm.models.FavoriteCar;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 
 public class FavoriteCarNewAdapter extends RecyclerView.Adapter<FavoriteCarNewAdapter.FavoriteCarViewHolder> {
 
@@ -56,15 +59,25 @@ public class FavoriteCarNewAdapter extends RecyclerView.Adapter<FavoriteCarNewAd
         holder.textViewCarName.setText(car.getName());
         holder.textViewCarType.setText(car.getVehicleType());
 
-        // Make sure price is displayed correctly
+        // Format price in Vietnamese format with VND currency
+        String formattedPrice;
         if (!car.getPriceFormatted().isEmpty()) {
-            holder.textViewBasePrice.setText(car.getPriceFormatted());
-            Log.d("FavoriteCarAdapter", "Price formatted: " + car.getPriceFormatted());
+            try {
+                // Try to parse any existing numeric value from priceFormatted
+                String numericPart = car.getPriceFormatted().replaceAll("[^0-9.,]", "");
+                double price = Double.parseDouble(numericPart);
+                formattedPrice = formatPriceVND(price);
+            } catch (NumberFormatException e) {
+                // If parsing fails, use the original string
+                formattedPrice = car.getPriceFormatted();
+            }
         } else {
-            String formattedPrice = String.format("%,.0f", car.getBasePrice());
-            holder.textViewBasePrice.setText(formattedPrice);
-            Log.d("FavoriteCarAdapter", "Using base price: " + formattedPrice);
+            // Use base price if priceFormatted is empty
+            formattedPrice = formatPriceVND(car.getBasePrice());
         }
+        
+        holder.textViewBasePrice.setText(formattedPrice + " / day");
+        Log.d("FavoriteCarAdapter", "Formatted price: " + formattedPrice);
 
         // Set car specifications
         holder.textViewFuelType.setText(car.getFuelType());
@@ -127,6 +140,18 @@ public class FavoriteCarNewAdapter extends RecyclerView.Adapter<FavoriteCarNewAd
             intent.putExtra("car_id", car.getVehicleId());
             context.startActivity(intent);
         });
+    }
+    
+    /**
+     * Format price in Vietnamese currency format (e.g., 8.000.000.000 VND)
+     */
+    private String formatPriceVND(double price) {
+        DecimalFormat formatter = new DecimalFormat("#,###");
+        formatter.setGroupingSize(3);
+        formatter.setGroupingUsed(true);
+        String formattedPrice = formatter.format(price);
+        // Replace commas with dots for Vietnamese format
+        return formattedPrice.replace(",", ".") + " VND";
     }
 
     @Override
