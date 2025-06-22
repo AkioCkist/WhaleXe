@@ -278,7 +278,9 @@ public class CarDetailActivity extends AppCompatActivity {
                     car.setVehicleType(documentSnapshot.getString("vehicle_type"));
                     car.setDescription(documentSnapshot.getString("description"));
                     car.setStatus(documentSnapshot.getString("status"));
-                    car.setFuel_consumption(documentSnapshot.getString("fuel_consumption"));
+                    // Fix fuel consumption - add default value if null
+                    String fuelConsumption = documentSnapshot.getString("fuel_consumption");
+                    car.setFuel_consumption(fuelConsumption != null ? fuelConsumption : "10L/100km");
 
                     // Get car images
                     Map<String, Object> images = (Map<String, Object>) documentSnapshot.get("images");
