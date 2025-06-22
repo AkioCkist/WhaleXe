@@ -98,6 +98,19 @@ public class CarListing extends AppCompatActivity implements CarListingAdapter.O
             String returnDate = intent.getStringExtra("dropoff_date");
             String returnTime = intent.getStringExtra("dropoff_time");
 
+            // Get selected brand filter if passed from homepage
+            if (intent.hasExtra("selected_brand")) {
+                currentBrandFilter = intent.getStringExtra("selected_brand");
+                Log.d(TAG, "Brand filter applied from intent: " + currentBrandFilter);
+
+                // Update search bar text with brand name
+                EditText editTextSearch = findViewById(R.id.editTextSearch);
+                if (editTextSearch != null && currentBrandFilter != null) {
+                    editTextSearch.setText(currentBrandFilter);
+                    editTextSearch.setSelection(currentBrandFilter.length()); // Move cursor to end
+                }
+            }
+
             // Parse date and time into Calendar objects if they exist
             if (pickupDate != null && pickupTime != null) {
                 pickupDateTime = Calendar.getInstance();
@@ -553,9 +566,18 @@ public class CarListing extends AppCompatActivity implements CarListingAdapter.O
             }
         }
 
-        // Update RecyclerView and car count
-        carListingAdapter.notifyDataSetChanged();
-        updateCarCount(filteredCarList.size());
+        // Update adapter with filtered list
+        carListingAdapter = new CarListingAdapter(filteredCarList, this);
+        recyclerView.setAdapter(carListingAdapter);
+
+        // Apply brand filter if it exists
+        if (currentBrandFilter != null) {
+            applyFilters();
+            Log.d(TAG, "Brand filter applied after location filtering: " + currentBrandFilter);
+        } else {
+            // If no brand filter, just update car count
+            updateCarCount(filteredCarList.size());
+        }
     }
 
     // Helper method to extract the city name prefix from car location header
