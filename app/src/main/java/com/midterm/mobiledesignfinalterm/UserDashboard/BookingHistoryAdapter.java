@@ -1,32 +1,34 @@
 package com.midterm.mobiledesignfinalterm.UserDashboard;
 
-// BookingHistoryAdapter.java (Updated for local assets)
 import android.content.Context;
+import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
-import com.bumptech.glide.Glide; // Make sure you have this dependency
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.midterm.mobiledesignfinalterm.R;
 
-import java.text.NumberFormat;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 public class BookingHistoryAdapter extends RecyclerView.Adapter<BookingHistoryAdapter.ViewHolder> {
 
     private Context context;
-    private List<BookingDetail> bookingDetails;
+    private List<Booking> bookings;
+    private static final String TAG = "BookingAdapter_DEBUG"; // New tag for adapter logs
 
-    // We no longer need BASE_IMAGE_URL
-
-    public BookingHistoryAdapter(Context context, List<BookingDetail> bookingDetails) {
+    public BookingHistoryAdapter(Context context, List<Booking> bookings) {
         this.context = context;
-        this.bookingDetails = bookingDetails;
+        this.bookings = bookings;
     }
 
     @NonNull
@@ -38,74 +40,64 @@ public class BookingHistoryAdapter extends RecyclerView.Adapter<BookingHistoryAd
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        BookingDetail detail = bookingDetails.get(position);
-        Booking booking = detail.getBooking();
-        Vehicle vehicle = detail.getVehicle();
+        Booking booking = bookings.get(position);
 
-        holder.carName.setText(vehicle.getName());
-        // Set booking ID
-        holder.bookingId.setText("ID: " + booking.getBookingId());
+        Log.d(TAG, "--- Binding view for Booking ID: " + booking.getId() + " ---");
 
-        // Display date range
-        String dateRange = booking.getPickupDate() != null && !booking.getPickupDate().isEmpty()
-                ? booking.getPickupDate() + " - " + booking.getDropoffDate()
-                : booking.getPickup_date() + " - " + booking.getReturn_date();
+        holder.carName.setText(booking.getVehicleName());
+        holder.bookingId.setText("ID: " + (booking.getBookingId() != null ? booking.getBookingId() : booking.getId()));
+
+        String dateRange = (booking.getPickupDate() != null ? booking.getPickupDate() : booking.getPickup_date())
+                + " - " + (booking.getDropoffDate() != null ? booking.getDropoffDate() : booking.getReturn_date());
         holder.bookingDate.setText(dateRange);
 
-        // Display locations
-        String locText = "From: " + booking.getPickupLocation() + "  -" + " To: " + booking.getDropoffLocation();
-        holder.locations.setText(locText);
+        holder.locations.setText("From: " + booking.getPickupLocation() + "  - " + " To: " + booking.getDropoffLocation());
+        holder.times.setText(booking.getPickupTime() + " - " + booking.getDropoffTime());
+        holder.totalPrice.setText("Total: " + booking.getFormattedFinalPrice());
+        String status = booking.getStatus();
+        holder.status.setText(status.substring(0, 1).toUpperCase() + status.substring(1).toLowerCase());
 
-        // Display times
-        String timeText = booking.getPickupTime() + " - " + booking.getDropoffTime();
-        holder.times.setText(timeText);
+        // --- ADDED LOGS FOR IMAGE LOADING ---
+        String primaryImageUrl = booking.getVehicleImage();
+        Log.d(TAG, "  -> Vehicle Name: " + booking.getVehicleName());
+        Log.d(TAG, "  -> Received image URL from booking object: '" + primaryImageUrl + "'");
 
-        // Total price
-        NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
-        holder.totalPrice.setText("Total: " + currencyFormat.format(
-                booking.getTotalAmount() != null
-                        ? Double.parseDouble(booking.getTotalAmount())
-                        : booking.getTotal_price()));
-
-        holder.status.setText(booking.getStatus().substring(0, 1).toUpperCase() + booking.getStatus().substring(1));
-
-        // --- MODIFIED IMAGE LOADING LOGIC ---
-        String primaryImageUrl = "";
-        if (vehicle.getImages() != null) {
-            for (Map.Entry<String, Image> entry : vehicle.getImages().entrySet()) {
-                if (entry.getValue().isPrimary()) {
-                    primaryImageUrl = entry.getValue().getImageUrl();
-                    break;
-                }
-            }
-        }
-
-        // Check if a primary image URL was found
-        if (!primaryImageUrl.isEmpty()) {
-            // The path from JSON is like "/cars/image.png".
-            // We create a special URI for loading from the assets folder.
+        if (primaryImageUrl != null && !primaryImageUrl.isEmpty()) {
             String assetPath = "file:///android_asset" + primaryImageUrl;
+            Log.d(TAG, "  -> Attempting to load path with Glide: '" + assetPath + "'");
 
             Glide.with(context)
                     .load(assetPath)
-                    .placeholder(R.drawable.ic_profile) // Image shown while loading
-                    .error(R.drawable.ic_profile)       // Image shown if path is incorrect or file is missing
+                    .placeholder(R.drawable.ic_profile)
+                    .error(R.drawable.ic_profile)
+                    .listener(new RequestListener<Drawable>() { // ADDED GLIDE LISTENER
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                            Log.e(TAG, "  -> GLIDE FAILED to load image. Path: " + model, e);
+                            return false; // Return false to allow error placeholder to be shown
+                        }
+
+                        @Override
+                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                            Log.d(TAG, "  -> GLIDE SUCCESS loading image. Path: " + model);
+                            return false; // Return false to allow Glide to handle the resource
+                        }
+                    })
                     .into(holder.carImage);
         } else {
-            // If no image is found, set a default placeholder
+            Log.w(TAG, "  -> Image URL is null or empty. Setting default placeholder.");
             holder.carImage.setImageResource(R.drawable.ic_profile);
         }
     }
 
     @Override
     public int getItemCount() {
-        return bookingDetails.size();
+        return bookings.size();
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView carImage;
         TextView carName, bookingId, bookingDate, locations, times, totalPrice, status;
-
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             carImage = itemView.findViewById(R.id.imageViewCar);
