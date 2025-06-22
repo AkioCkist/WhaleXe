@@ -47,11 +47,14 @@ import com.midterm.mobiledesignfinalterm.faq.FAQActivity;
 import android.widget.Toast;
 import android.Manifest;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.DocumentSnapshot;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -60,8 +63,12 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+
 import android.util.Log;
 
 public class Homepage extends AppCompatActivity implements LocationListener {
@@ -709,9 +716,10 @@ public class Homepage extends AppCompatActivity implements LocationListener {
         });
         recyclerViewBrands.setAdapter(brandAdapter);
 
-        // Setup cars RecyclerView
+        // Setup cars RecyclerView with dynamic data
         recyclerViewCars.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
-        CarAdapter carAdapter = new CarAdapter(getCarsList());
+        List<Car> topCars = getTopRatedCarsFromJSON(); // Using the new method to get top rated cars
+        CarAdapter carAdapter = new CarAdapter(topCars);
         recyclerViewCars.setAdapter(carAdapter);
     }
 
@@ -981,11 +989,131 @@ public class Homepage extends AppCompatActivity implements LocationListener {
         return brands;
     }
 
-    private List<Car> getCarsList() {
+    /**
+     * Helper method to load JSON data from assets folder
+     * @return String containing the JSON data
+     */
+    private String loadJSONFromAsset() {
+        String json = null;
+        try {
+            InputStream is = getAssets().open("vehicles.json");
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+            json = new String(buffer, "UTF-8");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return null;
+        }
+        return json;
+    }
+
+    /**
+     * Get top rated cars from Firestore database
+     * @return List of Car objects sorted by rating
+     */
+    private List<Car> getTopRatedCarsFromJSON() {
         List<Car> cars = new ArrayList<>();
-        cars.add(new Car("Tesla Model X", "Available from 2 August", "4 Seats", "$28.32/hour", "5.00", R.drawable.tesla_model_x));
-        cars.add(new Car("Tesla Model 3", "Available Now", "4 Seats", "$25.50/hour", "4.8", R.drawable.tesla_model_3));
+
+        // Show temporary data while loading
+        showLoading(true);
+
+        // Use Firebase Firestore to get vehicles
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("vehicles")
+            .get()
+            .addOnSuccessListener(queryDocumentSnapshots -> {
+                showLoading(false);
+
+                // Process results
+                for (DocumentSnapshot document : queryDocumentSnapshots) {
+                    String name = document.getString("name");
+                    String description = document.getString("description");
+                    int seats = document.getLong("seats") != null ? document.getLong("seats").intValue() : 0;
+                    double basePrice = document.getDouble("base_price") != null ? document.getDouble("base_price") : 0.0;
+                    double rating = document.getDouble("rating") != null ? document.getDouble("rating") : 0.0;
+                    int totalTrips = document.getLong("total_trips") != null ? document.getLong("total_trips").intValue() : 0;
+
+                    // Get primary image URL
+                    String imageUrl = "";
+                    Map<String, Object> images = (Map<String, Object>) document.get("images");
+                    if (images != null) {
+                        for (Map.Entry<String, Object> entry : images.entrySet()) {
+                            Map<String, Object> imageData = (Map<String, Object>) entry.getValue();
+                            if (imageData != null && Boolean.TRUE.equals(imageData.get("is_primary"))) {
+                                String relativePath = (String) imageData.get("image_url");
+
+                                if (relativePath != null) {
+                                    // Remove the leading slash if it exists
+                                    if (relativePath.startsWith("/")) {
+                                        relativePath = relativePath.substring(1);
+                                    }
+
+                                    imageUrl = "file:///android_asset/" + relativePath;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Create car using the constructor that matches our Car class definition
+                    Car car = new Car(name, description, seats, basePrice, rating, imageUrl, totalTrips);
+                    cars.add(car);
+                }
+
+                // Sort by rating (highest first) and then by total trips if ratings are equal
+                Collections.sort(cars, (c1, c2) -> {
+                    int ratingCompare = Double.compare(c2.getRating(), c1.getRating());
+                    if (ratingCompare == 0) {
+                        return Integer.compare(c2.getTotalTrips(), c1.getTotalTrips());
+                    }
+                    return ratingCompare;
+                });
+
+                // Take top 3 cars
+                List<Car> topCars = cars.size() > 3 ? cars.subList(0, 3) : cars;
+
+                // Update the RecyclerView adapter on the UI thread
+                runOnUiThread(() -> {
+                    CarAdapter carAdapter = new CarAdapter(topCars);
+                    recyclerViewCars.setAdapter(carAdapter);
+                });
+
+            })
+            .addOnFailureListener(e -> {
+                showLoading(false);
+                Log.e("Homepage", "Error getting car data: " + e.getMessage(), e);
+                Toast.makeText(Homepage.this, "Error loading car data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+
+                // Provide some default data in case of failure
+                List<Car> defaultCars = getDefaultCars();
+                runOnUiThread(() -> {
+                    CarAdapter carAdapter = new CarAdapter(defaultCars);
+                    recyclerViewCars.setAdapter(carAdapter);
+                });
+            });
+
+        // Return empty list initially, it will be populated asynchronously
         return cars;
+    }
+
+    /**
+     * Show or hide loading indicator
+     */
+    private void showLoading(boolean show) {
+        // Add your loading indicator logic here if needed
+    }
+
+    /**
+     * Provides default cars in case Firestore fetch fails
+     */
+    private List<Car> getDefaultCars() {
+        List<Car> defaultCars = new ArrayList<>();
+        defaultCars.add(new Car("Toyota Vios 2023", "Fuel-efficient family car", 4, 900000.00, 4.8, "", 125));
+        defaultCars.add(new Car("Honda CR-V 2024", "Spacious SUV for family travel", 7, 1500000.00, 4.9, "", 180));
+        defaultCars.add(new Car("Kia Morning 2022", "Compact, economical city car", 4, 500000.00, 4.5, "", 200));
+        return defaultCars;
     }
 
     // Animation Methods - Enhanced with all components
@@ -1221,27 +1349,31 @@ public class Homepage extends AppCompatActivity implements LocationListener {
 
     public static class Car {
         private String name;
-        private String availability;
-        private String seats;
-        private String price;
-        private String rating;
-        private int imageResource;
+        private String description; // Hoặc một trường dữ liệu phù hợp khác
+        private int seats;
+        private double price;
+        private double rating;
+        private String imageUrl;
+        private int totalTrips; // Dùng để sắp xếp
 
-        public Car(String name, String availability, String seats, String price, String rating, int imageResource) {
+        public Car(String name, String description, int seats, double price, double rating, String imageUrl, int totalTrips) {
             this.name = name;
-            this.availability = availability;
+            this.description = description;
             this.seats = seats;
             this.price = price;
             this.rating = rating;
-            this.imageResource = imageResource;
+            this.imageUrl = imageUrl;
+            this.totalTrips = totalTrips;
         }
 
+        // Getters
         public String getName() { return name; }
-        public String getAvailability() { return availability; }
-        public String getSeats() { return seats; }
-        public String getPrice() { return price; }
-        public String getRating() { return rating; }
-        public int getImageResource() { return imageResource; }
+        public String getDescription() { return description; }
+        public int getSeats() { return seats; }
+        public double getPrice() { return price; }
+        public double getRating() { return rating; }
+        public String getImageUrl() { return imageUrl; }
+        public int getTotalTrips() { return totalTrips; }
     }
 
     /**

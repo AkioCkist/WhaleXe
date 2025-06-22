@@ -28,6 +28,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
+                android:adjustViewBounds="true"
                 android:background="@drawable/car_image_background"
                 android:src="@drawable/tesla_placeholder" />
 
@@ -63,7 +64,10 @@
                 android:text="Tesla Model X"
                 android:textColor="@color/white"
                 android:textSize="18sp"
-                android:fontFamily="@font/notosans_bold" />
+                android:fontFamily="@font/notosans_bold"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:singleLine="true" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -91,16 +95,18 @@
 
         </LinearLayout>
 
-        <!-- Availability -->
+        <!-- Availability with fixed height -->
         <TextView
             android:id="@+id/textViewAvailability"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
             android:text="Available from 2 August"
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:fontFamily="@font/notosans_semibold"
-            android:layout_marginBottom="12dp" />
+            android:layout_marginBottom="12dp"
+            android:maxLines="2"
+            android:ellipsize="end" />
 
         <!-- Seats and Price -->
         <LinearLayout
@@ -165,6 +171,20 @@
             </LinearLayout>
 
         </LinearLayout>
+
+        <!-- More Details Button -->
+        <Button
+            android:id="@+id/buttonMoreDetails"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:text="More Details"
+            android:textAllCaps="false"
+            android:textSize="14sp"
+            android:fontFamily="@font/notosans_semibold"
+            android:textColor="@color/white"
+            android:background="@drawable/button_accent_background"
+            android:layout_marginTop="12dp"
+            app:backgroundTint="@color/accent_green" />
 
     </LinearLayout>
 

@@ -2,17 +2,23 @@ package com.midterm.mobiledesignfinalterm.homepage;
 
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 import com.midterm.mobiledesignfinalterm.R;
 
 import java.util.List;
+import java.util.Locale;
 
 public class CarAdapter extends RecyclerView.Adapter<CarAdapter.CarViewHolder> {
 
@@ -33,11 +39,6 @@ public class CarAdapter extends RecyclerView.Adapter<CarAdapter.CarViewHolder> {
     public void onBindViewHolder(@NonNull CarViewHolder holder, int position) {
         Homepage.Car car = carList.get(position);
         holder.bind(car);
-
-        holder.itemView.setOnClickListener(v -> {
-            animateItemClick(v);
-            // Handle car item click (navigate to car details)
-        });
     }
 
     @Override
@@ -65,6 +66,7 @@ public class CarAdapter extends RecyclerView.Adapter<CarAdapter.CarViewHolder> {
         private TextView textViewPrice;
         private TextView textViewRating;
         private ImageView imageViewFavorite;
+        private Button buttonMoreDetails;
 
         public CarViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -75,20 +77,59 @@ public class CarAdapter extends RecyclerView.Adapter<CarAdapter.CarViewHolder> {
             textViewPrice = itemView.findViewById(R.id.textViewPrice);
             textViewRating = itemView.findViewById(R.id.textViewRating);
             imageViewFavorite = itemView.findViewById(R.id.imageViewFavorite);
+            buttonMoreDetails = itemView.findViewById(R.id.buttonMoreDetails);
         }
 
         public void bind(Homepage.Car car) {
-            imageViewCar.setImageResource(car.getImageResource());
-            textViewCarName.setText(car.getName());
-            textViewAvailability.setText(car.getAvailability());
-            textViewSeats.setText(car.getSeats());
-            textViewPrice.setText(car.getPrice());
-            textViewRating.setText(car.getRating());
+            // Configure image loading with consistent dimensions
+            RequestOptions requestOptions = new RequestOptions()
+                .centerCrop()
+                .override(300, 160) // Fixed size for consistent display
+                .dontTransform();  // Prevent any automatic transformations
 
-            // Handle favorite button click
+            // Load image with the configured options
+            Glide.with(itemView.getContext())
+                .load(car.getImageUrl())
+                .apply(requestOptions)
+                .placeholder(R.drawable.ic_profile)
+                .error(R.drawable.ic_all_brands)
+                .into(imageViewCar);
+
+            // Update text fields
+            textViewCarName.setText(car.getName());
+            textViewAvailability.setText(car.getDescription());
+            textViewSeats.setText(String.format(Locale.getDefault(), "%d Seats", car.getSeats()));
+            textViewPrice.setText(String.format(Locale.getDefault(), "đ%,.0f/ngày", car.getPrice()));
+            textViewRating.setText(String.format(Locale.US, "%.1f", car.getRating()));
+
+            // Handle favorite button clicks
             imageViewFavorite.setOnClickListener(v -> {
                 animateFavoriteClick(v);
             });
+
+            // Set up the More Details button
+            buttonMoreDetails.setOnClickListener(v -> {
+                animateItemClick(v);
+                navigateToHomepageWithFilter(car.getName());
+            });
+        }
+
+        private void navigateToHomepageWithFilter(String carName) {
+            Intent intent = new Intent(itemView.getContext(), com.midterm.mobiledesignfinalterm.CarListing.CarListing.class);
+            intent.putExtra("selected_brand", carName); // Using the key "selected_brand" as seen in CarListing.java
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            itemView.getContext().startActivity(intent);
+        }
+
+        private void animateItemClick(View view) {
+            ObjectAnimator scaleX = ObjectAnimator.ofFloat(view, "scaleX", 1f, 0.95f, 1.05f, 1f);
+            ObjectAnimator scaleY = ObjectAnimator.ofFloat(view, "scaleY", 1f, 0.95f, 1.05f, 1f);
+
+            AnimatorSet animatorSet = new AnimatorSet();
+            animatorSet.playTogether(scaleX, scaleY);
+            animatorSet.setDuration(300);
+            animatorSet.setInterpolator(new OvershootInterpolator(1.1f));
+            animatorSet.start();
         }
 
         private void animateFavoriteClick(View view) {
