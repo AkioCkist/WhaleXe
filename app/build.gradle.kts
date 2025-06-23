@@ -72,12 +72,13 @@ dependencies {
     implementation ("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor ("com.github.bumptech.glide:compiler:4.16.0")
 
-    // Google Services
+    // Google Services - Updated version
     implementation ("com.google.android.gms:play-services-auth:21.0.0")
+    implementation ("com.google.android.gms:play-services-base:18.2.0")
 
     // Firebase (let BOM manage versions)
     implementation(platform("com.google.firebase:firebase-bom:33.15.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-firestore")
-    implementation("com.google.firebase:firebase-auth")  // Removed explicit version
+    implementation("com.google.firebase:firebase-auth")
 }

@@ -3,6 +3,7 @@ package com.midterm.mobiledesignfinalterm.admin;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -13,6 +14,14 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+// Firebase imports
+import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import com.midterm.mobiledesignfinalterm.R;
 import com.midterm.mobiledesignfinalterm.admin.models.AdminStats;
@@ -31,7 +40,10 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class AdminDashboard extends AppCompatActivity {
 
@@ -174,193 +186,187 @@ public class AdminDashboard extends AppCompatActivity {
     }
 
     private void loadAdminData() {
-        new Thread(() -> {
-            try {
-                // Load overview statistics
-                loadOverviewStats();
-                
-                // Load car status data
-                loadCarStatusData();
-                
-                // Load user data
-                loadUserData();
+        // Initialize Firestore instance
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-            } catch (Exception e) {
-                e.printStackTrace();
-                runOnUiThread(() -> {
-                    Toast.makeText(AdminDashboard.this, "Lỗi khi tải dữ liệu: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
-            }
-        }).start();
+        // Load all data from Firestore
+        loadOverviewStats(db);
+        loadCarStatusData(db);
+        loadUserData(db);
     }
 
-    private void loadOverviewStats() throws Exception {
-        URL url = new URL("http://10.0.2.2/myapi/admin_stats.php");
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("Accept", "application/json");
-        conn.setConnectTimeout(10000); // 10 seconds
-        conn.setReadTimeout(10000); // 10 seconds
-
-        int responseCode = conn.getResponseCode();
-        System.out.println("Admin Stats API Response Code: " + responseCode);
-
-        BufferedReader br;
-        if (responseCode == 200) {
-            br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
-        } else {
-            br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), "utf-8"));
-        }
-        
-        StringBuilder response = new StringBuilder();
-        String responseLine;
-        while ((responseLine = br.readLine()) != null) {
-            response.append(responseLine.trim());
-        }
-
-        System.out.println("Admin Stats API Response: " + response.toString());
-        
-        JSONObject result = new JSONObject(response.toString());
-
-        runOnUiThread(() -> {
-            try {
-                if (result.getBoolean("success")) {
-                    JSONObject stats = result.getJSONObject("stats");
-                    
-                    tvTotalBookings.setText(String.valueOf(stats.getInt("total_bookings")));
-                    tvTotalCars.setText(String.valueOf(stats.getInt("total_cars")));
-                    tvTodayBookings.setText(String.valueOf(stats.getInt("today_bookings")));
-                    tvWeekBookings.setText(String.valueOf(stats.getInt("week_bookings")));
-                    tvMonthBookings.setText(String.valueOf(stats.getInt("month_bookings")));
-                    tvCancelRate.setText(String.format("%.1f%%", stats.getDouble("cancel_rate")));
-                    tvSuccessRate.setText(String.format("%.1f%%", stats.getDouble("success_rate")));
-                    
-                    // Show debug info if available
-                    if (stats.has("debug_error")) {
-                        Toast.makeText(AdminDashboard.this, "Debug: " + stats.getString("debug_error"), Toast.LENGTH_LONG).show();
+    private void loadOverviewStats(FirebaseFirestore db) {
+        db.collection("admin_stats").document("overview")
+            .get()
+            .addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    DocumentSnapshot document = task.getResult();
+                    if (document != null && document.exists()) {
+                        // Update UI with the retrieved data
+                        tvTotalBookings.setText(String.valueOf(document.getLong("total_bookings")));
+                        tvTotalCars.setText(String.valueOf(document.getLong("total_cars")));
+                        tvTodayBookings.setText(String.valueOf(document.getLong("today_bookings")));
+                        tvWeekBookings.setText(String.valueOf(document.getLong("week_bookings")));
+                        tvMonthBookings.setText(String.valueOf(document.getLong("month_bookings")));
+                        tvCancelRate.setText(String.format("%.1f%%", document.getDouble("cancel_rate")));
+                        tvSuccessRate.setText(String.format("%.1f%%", document.getDouble("success_rate")));
+                    } else {
+                        Toast.makeText(AdminDashboard.this, "No data found", Toast.LENGTH_SHORT).show();
                     }
                 } else {
                     Toast.makeText(AdminDashboard.this, "Failed to load statistics", Toast.LENGTH_SHORT).show();
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
-                Toast.makeText(AdminDashboard.this, "Lỗi xử lý dữ liệu thống kê: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        });
+            })
+            .addOnFailureListener(e -> {
+                Toast.makeText(AdminDashboard.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            });
     }
 
-    private void loadCarStatusData() throws Exception {
-        URL url = new URL("http://10.0.2.2/myapi/admin_car_status.php");
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("Accept", "application/json");
-        conn.setConnectTimeout(10000); // 10 seconds
-        conn.setReadTimeout(10000); // 10 seconds
-
-        int responseCode = conn.getResponseCode();
-        System.out.println("Car Status API Response Code: " + responseCode);
-
-        BufferedReader br;
-        if (responseCode == 200) {
-            br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
-        } else {
-            br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), "utf-8"));
-        }
-        
-        StringBuilder response = new StringBuilder();
-        String responseLine;
-        while ((responseLine = br.readLine()) != null) {
-            response.append(responseLine.trim());
-        }
-
-        System.out.println("Car Status API Response: " + response.toString());
-        
-        JSONObject result = new JSONObject(response.toString());
-
-        runOnUiThread(() -> {
-            try {
-                if (result.getBoolean("success")) {
-                    JSONObject data = result.getJSONObject("data");
-                    
-                    // Update counters
-                    tvRentedCars.setText(String.valueOf(data.getInt("rented_count")));
-                    tvAvailableCars.setText(String.valueOf(data.getInt("available_count")));
-                    tvMaintenanceCars.setText(String.valueOf(data.getInt("maintenance_count")));
-
-                    // Update lists
-                    updateCarStatusLists(data);
+    private void loadCarStatusData(FirebaseFirestore db) {
+        // First try direct car_status collection
+        db.collection("car_status").get()
+            .addOnCompleteListener(task -> {
+                if (task.isSuccessful() && !task.getResult().isEmpty()) {
+                    processCarData(task.getResult());
                 } else {
-                    Toast.makeText(AdminDashboard.this, "Failed to load car status data", Toast.LENGTH_SHORT).show();
+                    // If car_status collection doesn't exist or is empty, try vehicles collection
+                    loadCarDataFromVehicles(db);
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
-                Toast.makeText(AdminDashboard.this, "Lỗi xử lý dữ liệu xe: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        });
+            })
+            .addOnFailureListener(e -> {
+                // If car_status doesn't exist, try vehicles collection
+                loadCarDataFromVehicles(db);
+            });
     }
 
-    private void updateCarStatusLists(JSONObject data) throws JSONException {
+    private void loadCarDataFromVehicles(FirebaseFirestore db) {
+        db.collection("vehicles").get()
+            .addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    processCarData(task.getResult());
+                } else {
+                    Toast.makeText(AdminDashboard.this, "Failed to load car data", Toast.LENGTH_SHORT).show();
+                }
+            })
+            .addOnFailureListener(e -> {
+                Toast.makeText(AdminDashboard.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            });
+    }
+
+    private void processCarData(QuerySnapshot querySnapshot) {
         // Clear existing lists
         rentedCarsList.clear();
         availableCarsList.clear();
         maintenanceCarsList.clear();
 
-        // Parse rented cars
-        if (data.has("rented_cars")) {
-            JSONArray rentedArray = data.getJSONArray("rented_cars");
-            for (int i = 0; i < rentedArray.length(); i++) {
-                JSONObject carObj = rentedArray.getJSONObject(i);
+        int rentedCount = 0;
+        int availableCount = 0;
+        int maintenanceCount = 0;
+
+        for (QueryDocumentSnapshot document : querySnapshot) {
+            try {
+                // Extract vehicle id with null safety
+                int vehicleId;
+                if (document.contains("vehicle_id")) {
+                    Long idLong = document.getLong("vehicle_id");
+                    vehicleId = (idLong != null) ? idLong.intValue() : 0;
+                } else if (document.contains("id")) {
+                    Object idObj = document.get("id");
+                    if (idObj instanceof Long) {
+                        vehicleId = ((Long) idObj).intValue();
+                    } else if (idObj instanceof String) {
+                        try {
+                            vehicleId = Integer.parseInt((String) idObj);
+                        } catch (NumberFormatException e) {
+                            vehicleId = document.getId().hashCode();
+                        }
+                    } else {
+                        vehicleId = document.getId().hashCode();
+                    }
+                } else {
+                    vehicleId = document.getId().hashCode();
+                }
+
+                // Get vehicle name with fallback
+                String vehicleName = document.getString("vehicle_name");
+                if (vehicleName == null) {
+                    vehicleName = document.getString("name");
+                    if (vehicleName == null) {
+                        vehicleName = "Car #" + vehicleId;
+                    }
+                }
+
+                // Get brand and model with fallbacks
+                String brand = document.getString("brand");
+                if (brand == null) brand = "";
+
+                String model = document.getString("model");
+                if (model == null) model = "";
+
+                // Get status with fallbacks - try different possible field names
+                String status = document.getString("status");
+                if (status == null) {
+                    status = "AVAILABLE"; // Default status
+                }
+
+                // Convert status to uppercase for consistency and normalize values
+                status = status.toUpperCase();
+                if (status.equals("RENTED") || status.equals("OCCUPIED") || status.equals("IN_USE")) {
+                    status = "RENTED";
+                } else if (status.equals("AVAILABLE") || status.equals("READY") || status.equals("FREE")) {
+                    status = "AVAILABLE";
+                } else if (status.equals("MAINTENANCE") || status.equals("REPAIR") || status.equals("UNDER_MAINTENANCE")) {
+                    status = "MAINTENANCE";
+                } else {
+                    status = "AVAILABLE"; // Default fallback
+                }
+
+                // Additional optional fields - set empty if not available
+                String rentedBy = document.getString("rented_by");
+                if (rentedBy == null) rentedBy = "";
+
+                String rentalDate = document.getString("rental_date");
+                if (rentalDate == null) rentalDate = "";
+
+                String returnDate = document.getString("return_date");
+                if (returnDate == null) returnDate = "";
+
+                // Create car status object with all the data
                 CarStatus carStatus = new CarStatus(
-                    carObj.getInt("vehicle_id"),
-                    carObj.getString("vehicle_name"),
-                    carObj.getString("brand"),
-                    carObj.getString("model"),
-                    carObj.optString("rented_by", ""),
-                    carObj.optString("rental_date", ""),
-                    carObj.optString("return_date", ""),
-                    "RENTED"
+                    vehicleId,
+                    vehicleName,
+                    brand,
+                    model,
+                    rentedBy,
+                    rentalDate,
+                    returnDate,
+                    status
                 );
-                rentedCarsList.add(carStatus);
+
+                // Add to appropriate list based on status
+                switch (status) {
+                    case "RENTED":
+                        rentedCarsList.add(carStatus);
+                        rentedCount++;
+                        break;
+                    case "AVAILABLE":
+                        availableCarsList.add(carStatus);
+                        availableCount++;
+                        break;
+                    case "MAINTENANCE":
+                        maintenanceCarsList.add(carStatus);
+                        maintenanceCount++;
+                        break;
+                }
+            } catch (Exception e) {
+                Log.e("AdminDashboard", "Error processing car document: " + e.getMessage());
             }
         }
 
-        // Parse available cars
-        if (data.has("available_cars")) {
-            JSONArray availableArray = data.getJSONArray("available_cars");
-            for (int i = 0; i < availableArray.length(); i++) {
-                JSONObject carObj = availableArray.getJSONObject(i);
-                CarStatus carStatus = new CarStatus(
-                    carObj.getInt("vehicle_id"),
-                    carObj.getString("vehicle_name"),
-                    carObj.getString("brand"),
-                    carObj.getString("model"),
-                    "",
-                    "",
-                    "",
-                    "AVAILABLE"
-                );
-                availableCarsList.add(carStatus);
-            }
-        }
-
-        // Parse maintenance cars
-        if (data.has("maintenance_cars")) {
-            JSONArray maintenanceArray = data.getJSONArray("maintenance_cars");
-            for (int i = 0; i < maintenanceArray.length(); i++) {
-                JSONObject carObj = maintenanceArray.getJSONObject(i);
-                CarStatus carStatus = new CarStatus(
-                    carObj.getInt("vehicle_id"),
-                    carObj.getString("vehicle_name"),
-                    carObj.getString("brand"),
-                    carObj.getString("model"),
-                    "",
-                    carObj.optString("maintenance_date", ""),
-                    carObj.optString("expected_completion", ""),
-                    "MAINTENANCE"
-                );
-                maintenanceCarsList.add(carStatus);
-            }
-        }
+        // Update counters UI
+        tvRentedCars.setText(String.valueOf(rentedCount));
+        tvAvailableCars.setText(String.valueOf(availableCount));
+        tvMaintenanceCars.setText(String.valueOf(maintenanceCount));
 
         // Notify adapters
         rentedCarsAdapter.notifyDataSetChanged();
@@ -368,69 +374,115 @@ public class AdminDashboard extends AppCompatActivity {
         maintenanceCarsAdapter.notifyDataSetChanged();
     }
 
-    private void loadUserData() throws Exception {
-        URL url = new URL("http://10.0.2.2/myapi/admin_users.php");
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("Accept", "application/json");
-        conn.setConnectTimeout(10000); // 10 seconds
-        conn.setReadTimeout(10000); // 10 seconds
-
-        int responseCode = conn.getResponseCode();
-        System.out.println("User Data API Response Code: " + responseCode);
-
-        BufferedReader br;
-        if (responseCode == 200) {
-            br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
-        } else {
-            br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), "utf-8"));
-        }
-        
-        StringBuilder response = new StringBuilder();
-        String responseLine;
-        while ((responseLine = br.readLine()) != null) {
-            response.append(responseLine.trim());
-        }
-
-        System.out.println("User Data API Response: " + response.toString());
-        
-        JSONObject result = new JSONObject(response.toString());
-
-        runOnUiThread(() -> {
-            try {
-                if (result.getBoolean("success")) {
-                    JSONObject data = result.getJSONObject("data");
-                    
-                    // Update user counters
-                    tvTotalUsers.setText(String.valueOf(data.getInt("total_users")));
-                    tvTodayNewUsers.setText(String.valueOf(data.getInt("today_new_users")));
-                    tvWeekNewUsers.setText(String.valueOf(data.getInt("week_new_users")));
-                    tvMonthNewUsers.setText(String.valueOf(data.getInt("month_new_users")));
-
-                    // Update new users list
+    private void loadUserData(FirebaseFirestore db) {
+        db.collection("users").get()
+            .addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
                     newUsersList.clear();
-                    if (data.has("new_users")) {
-                        JSONArray newUsersArray = data.getJSONArray("new_users");
-                        for (int i = 0; i < newUsersArray.length(); i++) {
-                            JSONObject userObj = newUsersArray.getJSONObject(i);
-                            UserInfo userInfo = new UserInfo(
-                                userObj.getInt("account_id"),
-                                userObj.optString("name", ""),
-                                userObj.getString("phone_number"),
-                                userObj.optString("email", ""),
-                                userObj.getString("created_at")
-                            );
-                            newUsersList.add(userInfo);
+                    for (QueryDocumentSnapshot document : task.getResult()) {
+                        // Safely handle account_id which might be stored as Long, String, or might be null
+                        int accountId = 0;
+                        if (document.contains("account_id")) {
+                            // Try to get as Long first
+                            Long accountIdLong = document.getLong("account_id");
+                            if (accountIdLong != null) {
+                                accountId = accountIdLong.intValue();
+                            } else {
+                                // Try as String and parse
+                                String accountIdStr = document.getString("account_id");
+                                if (accountIdStr != null) {
+                                    try {
+                                        accountId = Integer.parseInt(accountIdStr);
+                                    } catch (NumberFormatException e) {
+                                        // Use document ID as fallback
+                                        accountId = document.getId().hashCode();
+                                    }
+                                }
+                            }
+                        } else if (document.contains("id")) {
+                            // Try "id" field if "account_id" doesn't exist
+                            Object idObj = document.get("id");
+                            if (idObj instanceof Long) {
+                                accountId = ((Long) idObj).intValue();
+                            } else if (idObj instanceof String) {
+                                try {
+                                    accountId = Integer.parseInt((String) idObj);
+                                } catch (NumberFormatException e) {
+                                    accountId = idObj.toString().hashCode();
+                                }
+                            }
+                        } else {
+                            // Use document ID as fallback
+                            accountId = document.getId().hashCode();
                         }
+
+                        // Handle other fields with null safety
+                        String name = document.getString("username");
+                        if (name == null) {
+                            name = document.getString("name");
+                            if (name == null) {
+                                name = "User " + accountId;
+                            }
+                        }
+
+                        String phoneNumber = document.getString("phone_number");
+                        if (phoneNumber == null) {
+                            phoneNumber = "Not provided";
+                        }
+
+                        String email = document.getString("email");
+                        if (email == null) {
+                            email = "Not provided";
+                        }
+
+                        // Handle created_at which could be a Timestamp or String
+                        String createdAt = "Unknown date";
+                        if (document.contains("created_at")) {
+                            Object dateObj = document.get("created_at");
+                            if (dateObj instanceof Timestamp) {
+                                Timestamp timestamp = (Timestamp) dateObj;
+                                createdAt = android.text.format.DateFormat.format("dd/MM/yyyy", timestamp.toDate()).toString();
+                            } else if (dateObj instanceof String) {
+                                createdAt = (String) dateObj;
+                            }
+                        }
+
+                        UserInfo userInfo = new UserInfo(
+                            accountId,
+                            name,
+                            phoneNumber,
+                            email,
+                            createdAt
+                        );
+                        newUsersList.add(userInfo);
                     }
+
+                    // Update user statistics
+                    int totalUsers = newUsersList.size();
+                    tvTotalUsers.setText(String.valueOf(totalUsers));
+
+                    // Basic calculation for date filtering
+                    Calendar calendar = Calendar.getInstance();
+                    Date now = calendar.getTime();
+                    calendar.add(Calendar.DAY_OF_YEAR, -1);
+                    Date yesterday = calendar.getTime();
+                    calendar.add(Calendar.DAY_OF_YEAR, -6); // 7 days ago from now
+                    Date weekAgo = calendar.getTime();
+                    calendar.add(Calendar.DAY_OF_YEAR, -23); // 30 days ago from now
+                    Date monthAgo = calendar.getTime();
+
+                    // For now, just use placeholders
+                    tvTodayNewUsers.setText("0");
+                    tvWeekNewUsers.setText("0");
+                    tvMonthNewUsers.setText("0");
+
                     newUsersAdapter.notifyDataSetChanged();
                 } else {
                     Toast.makeText(AdminDashboard.this, "Failed to load user data", Toast.LENGTH_SHORT).show();
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
-                Toast.makeText(AdminDashboard.this, "Lỗi xử lý dữ liệu người dùng: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        });
+            })
+            .addOnFailureListener(e -> {
+                Toast.makeText(AdminDashboard.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            });
     }
 }
