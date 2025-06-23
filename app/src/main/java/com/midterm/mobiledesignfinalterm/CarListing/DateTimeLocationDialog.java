@@ -9,14 +9,17 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
 
 import com.google.android.material.datepicker.MaterialDatePicker;
@@ -151,36 +154,38 @@ public class DateTimeLocationDialog extends Dialog {
 
     private void setupLocationSpinners() {
         try {
-            // Create adapters with proper context
-            pickupAdapter = new ArrayAdapter<String>(getContext(), android.R.layout.simple_spinner_item, locations) {
+            // A custom adapter that ensures the text color is black for both the
+            // selected item (getView) and the dropdown list items (getDropDownView).
+            ArrayAdapter<String> customAdapter = new ArrayAdapter<String>(getContext(), android.R.layout.simple_spinner_item, locations) {
+                @NonNull
                 @Override
-                public View getView(int position, View convertView, android.view.ViewGroup parent) {
+                public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                    // This is for the currently selected item
                     View view = super.getView(position, convertView, parent);
-                    // Ensure text is visible
-                    if (view instanceof android.widget.TextView) {
-                        ((android.widget.TextView) view).setTextColor(Color.BLACK);
+                    if (view instanceof TextView) {
+                        ((TextView) view).setTextColor(Color.BLACK);
                     }
                     return view;
                 }
-            };
-            pickupAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
-            returnAdapter = new ArrayAdapter<String>(getContext(), android.R.layout.simple_spinner_item, locations) {
                 @Override
-                public View getView(int position, View convertView, android.view.ViewGroup parent) {
-                    View view = super.getView(position, convertView, parent);
-                    // Ensure text is visible
-                    if (view instanceof android.widget.TextView) {
-                        ((android.widget.TextView) view).setTextColor(Color.BLACK);
+                public View getDropDownView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                    // This is for the items in the dropdown list
+                    View view = super.getDropDownView(position, convertView, parent);
+                    if (view instanceof TextView) {
+                        ((TextView) view).setTextColor(Color.BLACK);
                     }
                     return view;
                 }
             };
-            returnAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+            // Use the standard dropdown item layout, the color will be overridden above.
+            customAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
             // Set adapters
-            spinnerPickupLocation.setAdapter(pickupAdapter);
-            spinnerReturnLocation.setAdapter(returnAdapter);
+            spinnerPickupLocation.setAdapter(customAdapter);
+            spinnerReturnLocation.setAdapter(customAdapter);
+
 
             Log.d(TAG, "Adapters set successfully");
             Log.d(TAG, "DEBUG: Trying to match pickupLocation: '" + pickupLocation + "'");
@@ -199,6 +204,7 @@ public class DateTimeLocationDialog extends Dialog {
             Log.e(TAG, "Error setting up location spinners: " + e.getMessage(), e);
         }
     }
+
 
     private void setInitialSelections() {
         try {
