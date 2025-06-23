@@ -29,6 +29,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -40,6 +41,7 @@ import com.midterm.mobiledesignfinalterm.R;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 public class Login extends AppCompatActivity {
@@ -152,13 +154,79 @@ public class Login extends AppCompatActivity {
         try {
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
             Log.d(TAG, "signInResult:success, user: " + account.getEmail());
-            Toast.makeText(this, "Google Sign-In successful!", Toast.LENGTH_SHORT).show();
-            navigateToHomepage(account);
+            // Check if user exists in Firestore, create if not, then navigate to homepage
+            checkUserInFirestore(account);
         } catch (ApiException e) {
             Log.w(TAG, "signInResult:failed code=" + e.getStatusCode());
             Toast.makeText(this, "Google Sign-In failed. Please try again.", Toast.LENGTH_LONG).show();
         }
     }
+
+    /**
+     * Checks if the Google-signed-in user exists in Firestore.
+     * If they exist, navigate to the homepage.
+     * If not, create a new user entry and then navigate.
+     * @param account The GoogleSignInAccount of the user.
+     */
+    private void checkUserInFirestore(GoogleSignInAccount account) {
+        String userId = account.getId();
+        if (userId == null) {
+            Toast.makeText(this, "Google Sign-In failed: User ID is null.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // Reference to the user document using their Google ID
+        db.collection(USERS_COLLECTION).document(userId).get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DocumentSnapshot document = task.getResult();
+                if (document != null && document.exists()) {
+                    // User exists
+                    Log.d(TAG, "User " + userId + " already exists in Firestore.");
+                    Toast.makeText(this, "Welcome back, " + account.getDisplayName() + "!", Toast.LENGTH_SHORT).show();
+                    navigateToHomepage(account);
+                } else {
+                    // User does not exist, create a new one
+                    Log.d(TAG, "User " + userId + " not found. Creating new user.");
+                    createNewUserInFirestore(account);
+                }
+            } else {
+                // Error getting document
+                Log.w(TAG, "Error checking user in Firestore.", task.getException());
+                Toast.makeText(Login.this, "Failed to verify user. Please try again.", Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    /**
+     * Creates a new user document in the 'users' collection in Firestore.
+     * @param account The GoogleSignInAccount of the new user.
+     */
+    private void createNewUserInFirestore(GoogleSignInAccount account) {
+        String userId = account.getId();
+        String userName = account.getDisplayName();
+        String email = account.getEmail();
+
+        // Create a new user map object
+        Map<String, Object> newUser = new HashMap<>();
+        newUser.put("id", userId);
+        newUser.put("username", userName);
+        newUser.put("email", email);
+        newUser.put("role_id", 1L); // Default role_id for a new user (1 = renter based on your JSON)
+        newUser.put("created_at", Timestamp.now()); // Use server timestamp
+
+        // Add the new document to the 'users' collection with the Google User ID as the document ID
+        db.collection(USERS_COLLECTION).document(userId).set(newUser)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "New user created successfully in Firestore.");
+                    Toast.makeText(this, "Welcome, " + userName + "! Your account has been created.", Toast.LENGTH_SHORT).show();
+                    navigateToHomepage(account);
+                })
+                .addOnFailureListener(e -> {
+                    Log.w(TAG, "Error creating new user in Firestore.", e);
+                    Toast.makeText(Login.this, "Failed to create your account. Please try again.", Toast.LENGTH_LONG).show();
+                });
+    }
+
 
     private void navigateToHomepage(GoogleSignInAccount account) {
         Intent intent = new Intent(Login.this, Homepage.class);
@@ -449,6 +517,7 @@ public class Login extends AppCompatActivity {
         button.animate().scaleX(0.95f).scaleY(0.95f).setDuration(70).withEndAction(() ->
                 button.animate().scaleX(1f).scaleY(1f).setDuration(100).withEndAction(onComplete).start()).start();
     }
+
 
     private void animateTextClick(View view) {
         ObjectAnimator scaleX = ObjectAnimator.ofFloat(view, "scaleX", 1f, 1.2f, 1f);
