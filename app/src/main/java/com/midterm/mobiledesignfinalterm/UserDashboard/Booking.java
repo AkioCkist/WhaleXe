@@ -99,7 +99,6 @@ public class Booking {
     public String getTotalAmount() { return totalAmount; }
     public void setTotalAmount(String totalAmount) { this.totalAmount = totalAmount; }
 
-    public Timestamp getCreatedAt() { return createdAt; }
     public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
 
     // Setters for Firestore mapping
@@ -119,6 +118,23 @@ public class Booking {
     public void setNewPickupTime(String val) { this.newPickupTime = val; }
     @com.google.firebase.firestore.PropertyName("dropoffTime")
     public void setNewDropoffTime(String val) { this.newDropoffTime = val; }
+    // Inside your Booking.java class
+
+    public void setCreatedAt(Object createdAt) {
+        if (createdAt instanceof Timestamp) {
+            this.createdAt = (Timestamp) createdAt;
+        } else if (createdAt instanceof java.util.Map) {
+            // Handle the case where it's a map from a server timestamp
+            // This is a simplified example; you might need to adjust based on the exact map structure
+            // For now, we'll leave it null and let the getter handle it,
+            // or you can parse the map if you know its structure.
+            this.createdAt = null;
+        }
+    }
+
+    public Timestamp getCreatedAt() {
+        return createdAt;
+    }
 
     // Unified getters for use in UI
     public String getPickupLocation() {

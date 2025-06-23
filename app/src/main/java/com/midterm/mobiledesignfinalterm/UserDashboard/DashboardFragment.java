@@ -109,10 +109,53 @@ public class DashboardFragment extends Fragment {
             List<Booking> fetchedBookings = new ArrayList<>();
             for (Object snapshot : results) {
                 for (DocumentSnapshot doc : ((QuerySnapshot) snapshot).getDocuments()) {
-                    Booking booking = doc.toObject(Booking.class);
-                    if (booking != null) {
+                    try {
+                        Booking booking = new Booking();
                         booking.setId(doc.getId());
+
+                        // Safely get fields
+                        if (doc.contains("userId")) {
+                            booking.setUserId(doc.getString("userId"));
+                        }
+                        if (doc.contains("carId")) {
+                            booking.setCarId(doc.getString("carId"));
+                        }
+                        if (doc.contains("pickupDate")) {
+                            booking.setPickupDate(doc.getString("pickupDate"));
+                        }
+                        if (doc.contains("dropoffDate")) {
+                            booking.setDropoffDate(doc.getString("dropoffDate"));
+                        }
+                        if (doc.contains("bookingId")) {
+                            booking.setBookingId(doc.getString("bookingId"));
+                        }
+                        if (doc.contains("totalAmount")) {
+                            booking.setTotalAmount(doc.getString("totalAmount"));
+                        }
+                        if (doc.contains("status")) {
+                            booking.setStatus(doc.getString("status"));
+                        }
+
+                        // Handle the createdAt field carefully
+                        if (doc.contains("createdAt")) {
+                            Object createdAtData = doc.get("createdAt");
+                            if (createdAtData instanceof Timestamp) {
+                                booking.setCreatedAt((Timestamp) createdAtData);
+                            }
+                        }
+
+                        // Also handle old format fields if necessary
+                        if (doc.contains("renter_id")) {
+                            booking.setRenter_id(doc.getLong("renter_id"));
+                        }
+                        if (doc.contains("vehicle_id")) {
+                            booking.setVehicle_id(doc.getLong("vehicle_id"));
+                        }
+
+
                         fetchedBookings.add(booking);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing booking document: " + doc.getId(), e);
                     }
                 }
             }
