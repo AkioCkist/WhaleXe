@@ -229,7 +229,8 @@
                             android:layout_width="20dp"
                             android:layout_height="20dp"
                             android:layout_marginEnd="6dp"
-                            android:src="@drawable/cardetail_ic_trips" />
+                            android:src="@drawable/cardetail_ic_trips"
+                            app:tint="@color/green_primary" />
 
                         <TextView
                             android:id="@+id/tv_trips"
@@ -252,7 +253,8 @@
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:layout_marginEnd="6dp"
-                        android:src="@drawable/cardetail_ic_location" />
+                        android:src="@drawable/cardetail_ic_location"
+                        app:tint="@color/green_primary" />
 
                     <TextView
                         android:id="@+id/tv_location"
