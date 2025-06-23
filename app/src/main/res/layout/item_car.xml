@@ -32,20 +32,6 @@
                 android:background="@drawable/car_image_background"
                 android:src="@drawable/tesla_placeholder" />
 
-            <ImageView
-                android:id="@+id/imageViewFavorite"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_alignParentEnd="true"
-                android:layout_margin="12dp"
-                android:background="@drawable/favorite_background"
-                android:src="@drawable/ic_heart_outline"
-                android:tint="@color/white"
-                android:padding="8dp"
-                android:scaleType="centerInside"
-                android:clickable="true"
-                android:focusable="true" />
-
         </RelativeLayout>
 
         <!-- Car Name and Rating -->
@@ -79,8 +65,8 @@
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_star"
-                    android:tint="@color/accent_green"
-                    android:layout_marginEnd="4dp" />
+                    android:layout_marginEnd="4dp"
+                    app:tint="@color/accent_green" />
 
                 <TextView
                     android:id="@+id/textViewRating"
@@ -151,13 +137,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
-
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:src="@drawable/ic_dollar"
-                    android:tint="@color/accent_green"
-                    android:layout_marginEnd="4dp" />
 
                 <TextView
                     android:id="@+id/textViewPrice"

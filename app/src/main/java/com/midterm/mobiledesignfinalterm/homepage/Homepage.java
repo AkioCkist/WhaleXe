@@ -1,7 +1,10 @@
 package com.midterm.mobiledesignfinalterm.homepage;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Address;
@@ -13,6 +16,8 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.AccelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
@@ -142,6 +147,17 @@ public class Homepage extends AppCompatActivity implements LocationListener {
     private String userEmail;
     private String userPhotoUri;
 
+    // FAQ animation variables
+    private boolean isAnimating = false;
+    private static final int EXPAND_DURATION = 350;
+    private static final int COLLAPSE_DURATION = 300;
+    private boolean[] faqExpanded = new boolean[5]; // Track expanded state of each FAQ item
+
+    // FAQ arrays for animation
+    private LinearLayout[] faqCards;
+    private TextView[] faqAnswers;
+    private ImageView[] faqArrows;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -185,6 +201,14 @@ public class Homepage extends AppCompatActivity implements LocationListener {
 
         // Initial entrance animation - moved to after location setup
         animateInitialEntrance();
+
+        // Initialize FAQ arrays for animation
+        faqCards = new LinearLayout[]{faqItem1, faqItem2, faqItem3, faqItem4, faqItem5};
+        faqAnswers = new TextView[]{faqAnswer1, faqAnswer2, faqAnswer3, faqAnswer4, faqAnswer5};
+        faqArrows = new ImageView[]{faqArrow1, faqArrow2, faqArrow3, faqArrow4, faqArrow5};
+
+        // Setup FAQ click listeners
+        setupFAQClickListeners();
     }
 
     private void getUserInfoFromIntent() {
@@ -1406,5 +1430,216 @@ public class Homepage extends AppCompatActivity implements LocationListener {
                     .setDuration(300)
                     .start();
         }
+    }
+
+    // Expand and collapse animation methods for FAQ
+    private void expandItemSmooth(int index) {
+        TextView answer = faqAnswers[index];
+        ImageView arrow = faqArrows[index];
+
+        isAnimating = true;
+
+        // Enable hardware acceleration for smoother animations
+        answer.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        arrow.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
+        // Prepare the view for measurement
+        answer.setVisibility(View.VISIBLE);
+        answer.setAlpha(0f);
+        answer.setScaleY(0f);
+        answer.setTranslationY(-20f);
+
+        // Measure target height
+        answer.measure(
+                View.MeasureSpec.makeMeasureSpec(((View) answer.getParent()).getWidth(), View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        );
+        int targetHeight = answer.getMeasuredHeight();
+
+        // Set initial height to 0
+        answer.getLayoutParams().height = 0;
+        answer.requestLayout();
+
+        // Create smooth height animation
+        ValueAnimator heightAnimator = ValueAnimator.ofInt(0, targetHeight);
+        heightAnimator.setDuration(EXPAND_DURATION);
+        heightAnimator.setInterpolator(new DecelerateInterpolator(1.2f));
+
+        heightAnimator.addUpdateListener(animation -> {
+            int value = (int) animation.getAnimatedValue();
+            answer.getLayoutParams().height = value;
+            answer.requestLayout();
+        });
+
+        heightAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                answer.getLayoutParams().height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                answer.requestLayout();
+                answer.setLayerType(View.LAYER_TYPE_NONE, null);
+                arrow.setLayerType(View.LAYER_TYPE_NONE, null);
+                isAnimating = false;
+            }
+        });
+
+        // Create coordinated animations for smooth visual effect
+        AnimatorSet animatorSet = new AnimatorSet();
+
+        // Fade in animation
+        ObjectAnimator fadeIn = ObjectAnimator.ofFloat(answer, "alpha", 0f, 1f);
+        fadeIn.setDuration(EXPAND_DURATION);
+        fadeIn.setStartDelay(100); // Start slightly after height animation
+        fadeIn.setInterpolator(new DecelerateInterpolator());
+
+        // Scale animation for smooth appearance
+        ObjectAnimator scaleY = ObjectAnimator.ofFloat(answer, "scaleY", 0f, 1f);
+        scaleY.setDuration(EXPAND_DURATION);
+        scaleY.setStartDelay(50);
+        scaleY.setInterpolator(new DecelerateInterpolator(1.5f));
+
+        // Slide down animation
+        ObjectAnimator slideDown = ObjectAnimator.ofFloat(answer, "translationY", -20f, 0f);
+        slideDown.setDuration(EXPAND_DURATION);
+        slideDown.setStartDelay(80);
+        slideDown.setInterpolator(new DecelerateInterpolator(1.2f));
+
+        // Arrow rotation with smooth bounce
+        ObjectAnimator arrowRotation = ObjectAnimator.ofFloat(arrow, "rotation", 0f, 180f);
+        arrowRotation.setDuration(EXPAND_DURATION);
+        arrowRotation.setInterpolator(new DecelerateInterpolator(1.5f));
+
+        // Start all animations together
+        animatorSet.playTogether(fadeIn, scaleY, slideDown, arrowRotation);
+        animatorSet.start();
+        heightAnimator.start();
+    }
+
+    private void collapseItemSmooth(int index) {
+        TextView answer = faqAnswers[index];
+        ImageView arrow = faqArrows[index];
+
+        isAnimating = true;
+
+        // Enable hardware acceleration
+        answer.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        arrow.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
+        int initialHeight = answer.getHeight();
+
+        // Create smooth height collapse animation
+        ValueAnimator heightAnimator = ValueAnimator.ofInt(initialHeight, 0);
+        heightAnimator.setDuration(COLLAPSE_DURATION);
+        heightAnimator.setInterpolator(new AccelerateInterpolator(1.2f));
+
+        heightAnimator.addUpdateListener(animation -> {
+            int value = (int) animation.getAnimatedValue();
+            if (answer.getLayoutParams() != null) {
+                answer.getLayoutParams().height = value;
+                answer.requestLayout();
+            }
+        });
+
+        heightAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                answer.setVisibility(View.GONE);
+                answer.setAlpha(0f);
+                answer.setScaleY(0f);
+                answer.setTranslationY(-20f);
+                answer.setLayerType(View.LAYER_TYPE_NONE, null);
+                arrow.setLayerType(View.LAYER_TYPE_NONE, null);
+                isAnimating = false;
+            }
+        });
+
+        // Create coordinated collapse animations
+        AnimatorSet animatorSet = new AnimatorSet();
+
+        // Fade out animation
+        ObjectAnimator fadeOut = ObjectAnimator.ofFloat(answer, "alpha", 1f, 0f);
+        fadeOut.setDuration(COLLAPSE_DURATION - 50);
+        fadeOut.setInterpolator(new AccelerateInterpolator());
+
+        // Scale animation for smooth disappearance
+        ObjectAnimator scaleY = ObjectAnimator.ofFloat(answer, "scaleY", 1f, 0f);
+        scaleY.setDuration(COLLAPSE_DURATION);
+        scaleY.setInterpolator(new AccelerateInterpolator(1.5f));
+
+        // Slide up animation
+        ObjectAnimator slideUp = ObjectAnimator.ofFloat(answer, "translationY", 0f, -20f);
+        slideUp.setDuration(COLLAPSE_DURATION);
+        slideUp.setInterpolator(new AccelerateInterpolator(1.2f));
+
+        // Arrow rotation back to original position
+        ObjectAnimator arrowRotation = ObjectAnimator.ofFloat(arrow, "rotation", 180f, 0f);
+        arrowRotation.setDuration(COLLAPSE_DURATION);
+        arrowRotation.setInterpolator(new AccelerateInterpolator(1.2f));
+
+        // Start all animations together
+        animatorSet.playTogether(fadeOut, scaleY, slideUp, arrowRotation);
+        animatorSet.start();
+        heightAnimator.start();
+    }
+
+    private void setupFAQClickListeners() {
+        // Ensure all FAQ items start collapsed
+        for (int i = 0; i < faqExpanded.length; i++) {
+            faqExpanded[i] = false;
+        }
+
+        faqItem1.setOnClickListener(v -> {
+            if (!isAnimating) {
+                if (!faqExpanded[0]) {
+                    expandItemSmooth(0);
+                } else {
+                    collapseItemSmooth(0);
+                }
+                faqExpanded[0] = !faqExpanded[0];
+            }
+        });
+
+        faqItem2.setOnClickListener(v -> {
+            if (!isAnimating) {
+                if (!faqExpanded[1]) {
+                    expandItemSmooth(1);
+                } else {
+                    collapseItemSmooth(1);
+                }
+                faqExpanded[1] = !faqExpanded[1];
+            }
+        });
+
+        faqItem3.setOnClickListener(v -> {
+            if (!isAnimating) {
+                if (!faqExpanded[2]) {
+                    expandItemSmooth(2);
+                } else {
+                    collapseItemSmooth(2);
+                }
+                faqExpanded[2] = !faqExpanded[2];
+            }
+        });
+
+        faqItem4.setOnClickListener(v -> {
+            if (!isAnimating) {
+                if (!faqExpanded[3]) {
+                    expandItemSmooth(3);
+                } else {
+                    collapseItemSmooth(3);
+                }
+                faqExpanded[3] = !faqExpanded[3];
+            }
+        });
+
+        faqItem5.setOnClickListener(v -> {
+            if (!isAnimating) {
+                if (!faqExpanded[4]) {
+                    expandItemSmooth(4);
+                } else {
+                    collapseItemSmooth(4);
+                }
+                faqExpanded[4] = !faqExpanded[4];
+            }
+        });
     }
 }

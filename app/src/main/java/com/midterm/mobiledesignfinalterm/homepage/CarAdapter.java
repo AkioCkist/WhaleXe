@@ -65,7 +65,6 @@ public class CarAdapter extends RecyclerView.Adapter<CarAdapter.CarViewHolder> {
         private TextView textViewSeats;
         private TextView textViewPrice;
         private TextView textViewRating;
-        private ImageView imageViewFavorite;
         private Button buttonMoreDetails;
 
         public CarViewHolder(@NonNull View itemView) {
@@ -76,7 +75,6 @@ public class CarAdapter extends RecyclerView.Adapter<CarAdapter.CarViewHolder> {
             textViewSeats = itemView.findViewById(R.id.textViewSeats);
             textViewPrice = itemView.findViewById(R.id.textViewPrice);
             textViewRating = itemView.findViewById(R.id.textViewRating);
-            imageViewFavorite = itemView.findViewById(R.id.imageViewFavorite);
             buttonMoreDetails = itemView.findViewById(R.id.buttonMoreDetails);
         }
 
@@ -99,13 +97,8 @@ public class CarAdapter extends RecyclerView.Adapter<CarAdapter.CarViewHolder> {
             textViewCarName.setText(car.getName());
             textViewAvailability.setText(car.getDescription());
             textViewSeats.setText(String.format(Locale.getDefault(), "%d Seats", car.getSeats()));
-            textViewPrice.setText(String.format(Locale.getDefault(), "đ%,.0f/ngày", car.getPrice()));
+            textViewPrice.setText(String.format(Locale.getDefault(), "%,.0f VND/ngày", car.getPrice()));
             textViewRating.setText(String.format(Locale.US, "%.1f", car.getRating()));
-
-            // Handle favorite button clicks
-            imageViewFavorite.setOnClickListener(v -> {
-                animateFavoriteClick(v);
-            });
 
             // Set up the More Details button
             buttonMoreDetails.setOnClickListener(v -> {
@@ -129,18 +122,6 @@ public class CarAdapter extends RecyclerView.Adapter<CarAdapter.CarViewHolder> {
             animatorSet.playTogether(scaleX, scaleY);
             animatorSet.setDuration(300);
             animatorSet.setInterpolator(new OvershootInterpolator(1.1f));
-            animatorSet.start();
-        }
-
-        private void animateFavoriteClick(View view) {
-            ObjectAnimator rotation = ObjectAnimator.ofFloat(view, "rotation", 0f, 360f);
-            ObjectAnimator scaleX = ObjectAnimator.ofFloat(view, "scaleX", 1f, 1.3f, 1f);
-            ObjectAnimator scaleY = ObjectAnimator.ofFloat(view, "scaleY", 1f, 1.3f, 1f);
-
-            AnimatorSet animatorSet = new AnimatorSet();
-            animatorSet.playTogether(rotation, scaleX, scaleY);
-            animatorSet.setDuration(400);
-            animatorSet.setInterpolator(new OvershootInterpolator(1.2f));
             animatorSet.start();
         }
     }
