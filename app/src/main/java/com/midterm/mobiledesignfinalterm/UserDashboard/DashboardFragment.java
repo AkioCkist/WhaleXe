@@ -107,36 +107,30 @@ public class DashboardFragment extends Fragment {
 
         Tasks.whenAllSuccess(tasks).addOnSuccessListener(results -> {
             List<Booking> fetchedBookings = new ArrayList<>();
-            for (Object snapshot : results) {
-                for (DocumentSnapshot doc : ((QuerySnapshot) snapshot).getDocuments()) {
+            for (Object result : results) {
+                QuerySnapshot snapshot = (QuerySnapshot) result;
+                for (DocumentSnapshot doc : snapshot.getDocuments()) {
                     try {
                         Booking booking = new Booking();
+                        // Set the document ID
                         booking.setId(doc.getId());
 
-                        // Safely get fields
-                        if (doc.contains("userId")) {
-                            booking.setUserId(doc.getString("userId"));
-                        }
-                        if (doc.contains("carId")) {
-                            booking.setCarId(doc.getString("carId"));
-                        }
-                        if (doc.contains("pickupDate")) {
-                            booking.setPickupDate(doc.getString("pickupDate"));
-                        }
-                        if (doc.contains("dropoffDate")) {
-                            booking.setDropoffDate(doc.getString("dropoffDate"));
-                        }
-                        if (doc.contains("bookingId")) {
-                            booking.setBookingId(doc.getString("bookingId"));
-                        }
-                        if (doc.contains("totalAmount")) {
-                            booking.setTotalAmount(doc.getString("totalAmount"));
-                        }
-                        if (doc.contains("status")) {
-                            booking.setStatus(doc.getString("status"));
-                        }
+                        // --- Main booking details from your JSON structure ---
+                        if (doc.contains("userId")) booking.setUserId(doc.getString("userId"));
+                        if (doc.contains("carId")) booking.setCarId(doc.getString("carId"));
+                        if (doc.contains("bookingId")) booking.setBookingId(doc.getString("bookingId"));
+                        if (doc.contains("totalAmount")) booking.setTotalAmount(doc.getString("totalAmount"));
+                        if (doc.contains("status")) booking.setStatus(doc.getString("status"));
 
-                        // Handle the createdAt field carefully
+                        // --- Correctly parse Date, Time, and Location fields ---
+                        if (doc.contains("pickupDate")) booking.setPickupDate(doc.getString("pickupDate"));
+                        if (doc.contains("dropoffDate")) booking.setDropoffDate(doc.getString("dropoffDate"));
+                        if (doc.contains("pickupTime")) booking.setNewPickupTime(doc.getString("pickupTime"));
+                        if (doc.contains("dropoffTime")) booking.setNewDropoffTime(doc.getString("dropoffTime"));
+                        if (doc.contains("pickupLocation")) booking.setNewPickupLocation(doc.getString("pickupLocation"));
+                        if (doc.contains("dropoffLocation")) booking.setNewDropoffLocation(doc.getString("dropoffLocation"));
+
+                        // --- Handle the 'createdAt' timestamp safely to prevent crashes ---
                         if (doc.contains("createdAt")) {
                             Object createdAtData = doc.get("createdAt");
                             if (createdAtData instanceof Timestamp) {
@@ -144,22 +138,17 @@ public class DashboardFragment extends Fragment {
                             }
                         }
 
-                        // Also handle old format fields if necessary
-                        if (doc.contains("renter_id")) {
-                            booking.setRenter_id(doc.getLong("renter_id"));
-                        }
-                        if (doc.contains("vehicle_id")) {
-                            booking.setVehicle_id(doc.getLong("vehicle_id"));
-                        }
-
-
+                        // Add the fully parsed booking to the list
                         fetchedBookings.add(booking);
+
                     } catch (Exception e) {
                         Log.e(TAG, "Error parsing booking document: " + doc.getId(), e);
                     }
                 }
             }
+            // Continue with your existing logic
             fetchVehicleDetailsForBookings(fetchedBookings);
+
         }).addOnFailureListener(e -> {
             Log.e(TAG, "Error fetching bookings", e);
             updateUI();
