@@ -4,6 +4,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.method.HideReturnsTransformationMethod;
 import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
@@ -54,6 +55,7 @@ public class Login extends AppCompatActivity {
     private TextView textViewForgotPassword;
     private TextView textViewSignUp;
     private Button buttonGoogleSignIn;
+    private Button buttonFacebookSignIn;
 
     private boolean isPasswordVisible = false;
 
@@ -103,6 +105,7 @@ public class Login extends AppCompatActivity {
         textViewForgotPassword = findViewById(R.id.textViewForgotPassword);
         textViewSignUp = findViewById(R.id.textViewSignUp);
         buttonGoogleSignIn = findViewById(R.id.buttonGoogleSignIn);
+        buttonFacebookSignIn = findViewById(R.id.buttonFacebookSignIn);
     }
 
     private void setupClickListeners() {
@@ -118,6 +121,9 @@ public class Login extends AppCompatActivity {
         checkBoxRememberMe.setOnClickListener(this::animateCheckboxClick);
         buttonGoogleSignIn.setOnClickListener(v -> {
             animateButtonClick(v, this::signInWithGoogle);
+        });
+        buttonFacebookSignIn.setOnClickListener(v -> {
+            trollFacebookButton(v);
         });
     }
 
@@ -518,7 +524,6 @@ public class Login extends AppCompatActivity {
                 button.animate().scaleX(1f).scaleY(1f).setDuration(100).withEndAction(onComplete).start()).start();
     }
 
-
     private void animateTextClick(View view) {
         ObjectAnimator scaleX = ObjectAnimator.ofFloat(view, "scaleX", 1f, 1.2f, 1f);
         ObjectAnimator scaleY = ObjectAnimator.ofFloat(view, "scaleY", 1f, 1.2f, 1f);
@@ -553,5 +558,69 @@ public class Login extends AppCompatActivity {
     private void handleSignUp() {
         Intent intent = new Intent(Login.this, Register.class);
         startActivity(intent);
+    }
+
+    // Facebook Troll Animation - Fun way to let users know it's not ready yet!
+    private void trollFacebookButton(View view) {
+        // Disable the button temporarily to prevent spam clicking
+        view.setEnabled(false);
+
+        // Phase 1: Excited bounce animation (like it's about to work)
+        ObjectAnimator bounceX = ObjectAnimator.ofFloat(view, "scaleX", 1f, 1.3f, 0.8f, 1.2f, 0.9f, 1.1f, 1f);
+        ObjectAnimator bounceY = ObjectAnimator.ofFloat(view, "scaleY", 1f, 1.3f, 0.8f, 1.2f, 0.9f, 1.1f, 1f);
+        ObjectAnimator rotation1 = ObjectAnimator.ofFloat(view, "rotation", 0f, 15f, -10f, 8f, -5f, 0f);
+
+        AnimatorSet phase1 = new AnimatorSet();
+        phase1.playTogether(bounceX, bounceY, rotation1);
+        phase1.setDuration(800);
+        phase1.setInterpolator(new BounceInterpolator());
+
+        // Phase 2: "Loading" effect - rapid spin
+        ObjectAnimator rapidSpin = ObjectAnimator.ofFloat(view, "rotation", 0f, 1080f); // 3 full rotations
+        rapidSpin.setDuration(1200);
+
+        // Phase 3: "Error" shake effect
+        ObjectAnimator errorShake = ObjectAnimator.ofFloat(view, "translationX", 0f, 15f, -15f, 12f, -12f, 8f, -8f, 4f, -4f, 0f);
+        ObjectAnimator errorBounce = ObjectAnimator.ofFloat(view, "scaleX", 1f, 0.8f, 1.2f, 0.9f, 1.1f, 1f);
+        ObjectAnimator errorBounceY = ObjectAnimator.ofFloat(view, "scaleY", 1f, 0.8f, 1.2f, 0.9f, 1.1f, 1f);
+
+        AnimatorSet phase3 = new AnimatorSet();
+        phase3.playTogether(errorShake, errorBounce, errorBounceY);
+        phase3.setDuration(600);
+
+        // Chain the animations together
+        phase1.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                // Show fake loading toast
+                Toast.makeText(Login.this, "Connecting to Facebook... 📱", Toast.LENGTH_SHORT).show();
+                rapidSpin.start();
+            }
+        });
+
+        rapidSpin.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                phase3.start();
+            }
+        });
+
+        phase3.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                // Show the final troll message with a delay for dramatic effect
+                new Handler().postDelayed(() -> {
+                    Toast.makeText(Login.this,
+                            "Oops! 😅 Facebook login is still in development.\nPlease use Google Sign-In for now! 🚀",
+                            Toast.LENGTH_LONG).show();
+
+                    // Re-enable the button
+                    view.setEnabled(true);
+                }, 300);
+            }
+        });
+
+        // Start the troll sequence!
+        phase1.start();
     }
 }
