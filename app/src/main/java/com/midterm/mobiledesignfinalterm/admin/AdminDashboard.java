@@ -196,47 +196,168 @@ public class AdminDashboard extends AppCompatActivity {
     }
 
     private void loadOverviewStats(FirebaseFirestore db) {
-        db.collection("admin_stats").document("overview")
-            .get()
-            .addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot document = task.getResult();
-                    if (document != null && document.exists()) {
-                        // Update UI with the retrieved data
-                        tvTotalBookings.setText(String.valueOf(document.getLong("total_bookings")));
-                        tvTotalCars.setText(String.valueOf(document.getLong("total_cars")));
-                        tvTodayBookings.setText(String.valueOf(document.getLong("today_bookings")));
-                        tvWeekBookings.setText(String.valueOf(document.getLong("week_bookings")));
-                        tvMonthBookings.setText(String.valueOf(document.getLong("month_bookings")));
-                        tvCancelRate.setText(String.format("%.1f%%", document.getDouble("cancel_rate")));
-                        tvSuccessRate.setText(String.format("%.1f%%", document.getDouble("success_rate")));
-                    } else {
-                        Toast.makeText(AdminDashboard.this, "No data found", Toast.LENGTH_SHORT).show();
+        // Calculate Total Bookings
+        db.collection("bookings")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    int totalBookings = queryDocumentSnapshots.size();
+                    tvTotalBookings.setText(String.valueOf(totalBookings));
+
+                    // Calculate bookings for today, this week, and this month
+                    int todayBookings = 0;
+                    int weekBookings = 0;
+                    int monthBookings = 0;
+                    long cancelledBookings = 0;
+
+                    Calendar cal = Calendar.getInstance();
+                    int currentDay = cal.get(Calendar.DAY_OF_YEAR);
+                    int currentWeek = cal.get(Calendar.WEEK_OF_YEAR);
+                    int currentMonth = cal.get(Calendar.MONTH);
+                    int currentYear = cal.get(Calendar.YEAR);
+
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        Timestamp createdAtTimestamp = document.getTimestamp("createdAt");
+                        if (createdAtTimestamp != null) {
+                            Date bookingDate = createdAtTimestamp.toDate();
+                            Calendar bookingCal = Calendar.getInstance();
+                            bookingCal.setTime(bookingDate);
+
+                            if (bookingCal.get(Calendar.YEAR) == currentYear) {
+                                if (bookingCal.get(Calendar.MONTH) == currentMonth) {
+                                    monthBookings++;
+                                }
+                                if (bookingCal.get(Calendar.WEEK_OF_YEAR) == currentWeek) {
+                                    weekBookings++;
+                                }
+                                if (bookingCal.get(Calendar.DAY_OF_YEAR) == currentDay) {
+                                    todayBookings++;
+                                }
+                            }
+                        }
+                        if ("CANCELLED".equalsIgnoreCase(document.getString("status"))) {
+                            cancelledBookings++;
+                        }
                     }
-                } else {
-                    Toast.makeText(AdminDashboard.this, "Failed to load statistics", Toast.LENGTH_SHORT).show();
-                }
-            })
-            .addOnFailureListener(e -> {
-                Toast.makeText(AdminDashboard.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            });
+
+                    tvTodayBookings.setText(String.valueOf(todayBookings));
+                    tvWeekBookings.setText(String.valueOf(weekBookings));
+                    tvMonthBookings.setText(String.valueOf(monthBookings));
+
+                    if (totalBookings > 0) {
+                        double successRate = ((double) (totalBookings - cancelledBookings) / totalBookings) * 100;
+                        double cancelRate = ((double) cancelledBookings / totalBookings) * 100;
+                        tvSuccessRate.setText(String.format("%.1f%%", successRate));
+                        tvCancelRate.setText(String.format("%.1f%%", cancelRate));
+                    } else {
+                        tvSuccessRate.setText("0.0%");
+                        tvCancelRate.setText("0.0%");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(AdminDashboard.this, "Failed to load booking statistics", Toast.LENGTH_SHORT).show();
+                });
+
+        // Calculate Total Cars
+        db.collection("vehicles")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    tvTotalCars.setText(String.valueOf(queryDocumentSnapshots.size()));
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(AdminDashboard.this, "Failed to load total cars", Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void loadCarStatusData(FirebaseFirestore db) {
-        // First try direct car_status collection
-        db.collection("car_status").get()
-            .addOnCompleteListener(task -> {
-                if (task.isSuccessful() && !task.getResult().isEmpty()) {
-                    processCarData(task.getResult());
-                } else {
-                    // If car_status collection doesn't exist or is empty, try vehicles collection
-                    loadCarDataFromVehicles(db);
+        db.collection("bookings").whereEqualTo("status", "CONFIRMED").get()
+                .addOnCompleteListener(bookingTask -> {
+                    if (bookingTask.isSuccessful()) {
+                        List<String> rentedCarIds = new ArrayList<>();
+                        for (QueryDocumentSnapshot bookingDoc : bookingTask.getResult()) {
+                            String carId = bookingDoc.getString("carId");
+                            if (carId != null) {
+                                rentedCarIds.add(carId);
+                            }
+                        }
+
+                        db.collection("vehicles").get().addOnCompleteListener(vehicleTask -> {
+                            if (vehicleTask.isSuccessful()) {
+                                processCarData(vehicleTask.getResult(), rentedCarIds, bookingTask.getResult());
+                            } else {
+                                Toast.makeText(AdminDashboard.this, "Failed to load car data", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } else {
+                        Toast.makeText(AdminDashboard.this, "Failed to load booking data for car status", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void processCarData(QuerySnapshot vehicleSnapshot, List<String> rentedCarIds, QuerySnapshot bookingSnapshot) {
+        rentedCarsList.clear();
+        availableCarsList.clear();
+        maintenanceCarsList.clear();
+
+        for (QueryDocumentSnapshot document : vehicleSnapshot) {
+            String vehicleId = document.getId();
+            String vehicleName = document.getString("name");
+            String status;
+            String rentedBy = "";
+            String rentalDate = "";
+            String returnDate = "";
+
+            String[] nameParts = vehicleName != null ? vehicleName.split(" ", 2) : new String[]{"Unknown", "Vehicle"};
+            String brand = nameParts[0];
+            String model = nameParts.length > 1 ? nameParts[1] : "";
+
+
+            if (rentedCarIds.contains(vehicleId)) {
+                status = "RENTED";
+                for (QueryDocumentSnapshot bookingDoc : bookingSnapshot) {
+                    if (vehicleId.equals(bookingDoc.getString("carId"))) {
+                        rentedBy = bookingDoc.getString("userName");
+                        rentalDate = bookingDoc.getString("pickupDate");
+                        returnDate = bookingDoc.getString("dropoffDate");
+                        break;
+                    }
                 }
-            })
-            .addOnFailureListener(e -> {
-                // If car_status doesn't exist, try vehicles collection
-                loadCarDataFromVehicles(db);
-            });
+            } else if ("maintenance".equalsIgnoreCase(document.getString("status"))) {
+                status = "MAINTENANCE";
+            } else {
+                status = "AVAILABLE";
+            }
+
+            CarStatus carStatus = new CarStatus(
+                    Integer.parseInt(document.getId()),
+                    vehicleName,
+                    brand,
+                    model,
+                    rentedBy,
+                    rentalDate,
+                    returnDate,
+                    status
+            );
+
+            switch (status) {
+                case "RENTED":
+                    rentedCarsList.add(carStatus);
+                    break;
+                case "AVAILABLE":
+                    availableCarsList.add(carStatus);
+                    break;
+                case "MAINTENANCE":
+                    maintenanceCarsList.add(carStatus);
+                    break;
+            }
+        }
+
+        tvRentedCars.setText(String.valueOf(rentedCarsList.size()));
+        tvAvailableCars.setText(String.valueOf(availableCarsList.size()));
+        tvMaintenanceCars.setText(String.valueOf(maintenanceCarsList.size()));
+
+        rentedCarsAdapter.notifyDataSetChanged();
+        availableCarsAdapter.notifyDataSetChanged();
+        maintenanceCarsAdapter.notifyDataSetChanged();
     }
 
     private void loadCarDataFromVehicles(FirebaseFirestore db) {
@@ -376,113 +497,72 @@ public class AdminDashboard extends AppCompatActivity {
 
     private void loadUserData(FirebaseFirestore db) {
         db.collection("users").get()
-            .addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    newUsersList.clear();
-                    for (QueryDocumentSnapshot document : task.getResult()) {
-                        // Safely handle account_id which might be stored as Long, String, or might be null
-                        int accountId = 0;
-                        if (document.contains("account_id")) {
-                            // Try to get as Long first
-                            Long accountIdLong = document.getLong("account_id");
-                            if (accountIdLong != null) {
-                                accountId = accountIdLong.intValue();
-                            } else {
-                                // Try as String and parse
-                                String accountIdStr = document.getString("account_id");
-                                if (accountIdStr != null) {
-                                    try {
-                                        accountId = Integer.parseInt(accountIdStr);
-                                    } catch (NumberFormatException e) {
-                                        // Use document ID as fallback
-                                        accountId = document.getId().hashCode();
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        newUsersList.clear();
+                        int todayNewUsers = 0;
+                        int weekNewUsers = 0;
+                        int monthNewUsers = 0;
+
+                        Calendar cal = Calendar.getInstance();
+                        int currentDay = cal.get(Calendar.DAY_OF_YEAR);
+                        int currentWeek = cal.get(Calendar.WEEK_OF_YEAR);
+                        int currentMonth = cal.get(Calendar.MONTH);
+                        int currentYear = cal.get(Calendar.YEAR);
+
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            String name = document.getString("username");
+                            String phoneNumber = document.getString("phone_number");
+                            String email = "Not provided"; // No email in your user data
+
+                            Date creationDate = null;
+                            if (document.get("created_at") instanceof Timestamp) {
+                                creationDate = document.getTimestamp("created_at").toDate();
+                            } else if (document.get("created_at") instanceof String) {
+                                // Add robust date parsing if needed
+                            }
+
+                            String createdAtString = "Unknown date";
+                            if (creationDate != null) {
+                                createdAtString = android.text.format.DateFormat.format("dd/MM/yyyy", creationDate).toString();
+                                Calendar userCal = Calendar.getInstance();
+                                userCal.setTime(creationDate);
+
+                                if (userCal.get(Calendar.YEAR) == currentYear) {
+                                    if (userCal.get(Calendar.MONTH) == currentMonth) {
+                                        monthNewUsers++;
+                                    }
+                                    if (userCal.get(Calendar.WEEK_OF_YEAR) == currentWeek) {
+                                        weekNewUsers++;
+                                    }
+                                    if (userCal.get(Calendar.DAY_OF_YEAR) == currentDay) {
+                                        todayNewUsers++;
                                     }
                                 }
                             }
-                        } else if (document.contains("id")) {
-                            // Try "id" field if "account_id" doesn't exist
-                            Object idObj = document.get("id");
-                            if (idObj instanceof Long) {
-                                accountId = ((Long) idObj).intValue();
-                            } else if (idObj instanceof String) {
-                                try {
-                                    accountId = Integer.parseInt((String) idObj);
-                                } catch (NumberFormatException e) {
-                                    accountId = idObj.toString().hashCode();
-                                }
-                            }
-                        } else {
-                            // Use document ID as fallback
-                            accountId = document.getId().hashCode();
+
+                            UserInfo userInfo = new UserInfo(
+                                    document.getId(),
+                                    name,
+                                    phoneNumber,
+                                    email,
+                                    createdAtString
+                            );
+                            newUsersList.add(userInfo);
                         }
 
-                        // Handle other fields with null safety
-                        String name = document.getString("username");
-                        if (name == null) {
-                            name = document.getString("name");
-                            if (name == null) {
-                                name = "User " + accountId;
-                            }
-                        }
+                        tvTotalUsers.setText(String.valueOf(newUsersList.size()));
+                        tvTodayNewUsers.setText(String.valueOf(todayNewUsers));
+                        tvWeekNewUsers.setText(String.valueOf(weekNewUsers));
+                        tvMonthNewUsers.setText(String.valueOf(monthNewUsers));
 
-                        String phoneNumber = document.getString("phone_number");
-                        if (phoneNumber == null) {
-                            phoneNumber = "Not provided";
-                        }
-
-                        String email = document.getString("email");
-                        if (email == null) {
-                            email = "Not provided";
-                        }
-
-                        // Handle created_at which could be a Timestamp or String
-                        String createdAt = "Unknown date";
-                        if (document.contains("created_at")) {
-                            Object dateObj = document.get("created_at");
-                            if (dateObj instanceof Timestamp) {
-                                Timestamp timestamp = (Timestamp) dateObj;
-                                createdAt = android.text.format.DateFormat.format("dd/MM/yyyy", timestamp.toDate()).toString();
-                            } else if (dateObj instanceof String) {
-                                createdAt = (String) dateObj;
-                            }
-                        }
-
-                        UserInfo userInfo = new UserInfo(
-                            accountId,
-                            name,
-                            phoneNumber,
-                            email,
-                            createdAt
-                        );
-                        newUsersList.add(userInfo);
+                        newUsersAdapter.notifyDataSetChanged();
+                    } else {
+                        Toast.makeText(AdminDashboard.this, "Failed to load user data", Toast.LENGTH_SHORT).show();
                     }
-
-                    // Update user statistics
-                    int totalUsers = newUsersList.size();
-                    tvTotalUsers.setText(String.valueOf(totalUsers));
-
-                    // Basic calculation for date filtering
-                    Calendar calendar = Calendar.getInstance();
-                    Date now = calendar.getTime();
-                    calendar.add(Calendar.DAY_OF_YEAR, -1);
-                    Date yesterday = calendar.getTime();
-                    calendar.add(Calendar.DAY_OF_YEAR, -6); // 7 days ago from now
-                    Date weekAgo = calendar.getTime();
-                    calendar.add(Calendar.DAY_OF_YEAR, -23); // 30 days ago from now
-                    Date monthAgo = calendar.getTime();
-
-                    // For now, just use placeholders
-                    tvTodayNewUsers.setText("0");
-                    tvWeekNewUsers.setText("0");
-                    tvMonthNewUsers.setText("0");
-
-                    newUsersAdapter.notifyDataSetChanged();
-                } else {
-                    Toast.makeText(AdminDashboard.this, "Failed to load user data", Toast.LENGTH_SHORT).show();
-                }
-            })
-            .addOnFailureListener(e -> {
-                Toast.makeText(AdminDashboard.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            });
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(AdminDashboard.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 }

@@ -1,7 +1,7 @@
 package com.midterm.mobiledesignfinalterm.admin.models;
 
 public class UserInfo {
-    private int accountId;
+    private String accountId;
     private String name;
     private String phoneNumber;
     private String email;
@@ -9,7 +9,7 @@ public class UserInfo {
 
     public UserInfo() {}
 
-    public UserInfo(int accountId, String name, String phoneNumber, String email, String createdAt) {
+    public UserInfo(String accountId, String name, String phoneNumber, String email, String createdAt) {
         this.accountId = accountId;
         this.name = name;
         this.phoneNumber = phoneNumber;
@@ -18,8 +18,8 @@ public class UserInfo {
     }
 
     // Getters and Setters
-    public int getAccountId() { return accountId; }
-    public void setAccountId(int accountId) { this.accountId = accountId; }
+    public String getAccountId() { return accountId; }
+    public void setAccountId(String accountId) { this.accountId = accountId; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
