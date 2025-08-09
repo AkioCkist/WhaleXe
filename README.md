@@ -127,10 +127,10 @@
 - **Local Storage**: SharedPreferences for user data
 - **Location Services**: Android Location API
 
-### **Backend (PHP)**
-- **API Framework**: Custom PHP REST API
-- **Database**: MySQL for data persistence
-- **Authentication**: JWT-based session management
+### **Backend (Java)**
+- **API Framework**: Google Firebase API
+- **Database**: Google Firestore
+- **Authentication**: Google Firebase Authentication
 - **File Management**: Image storage and retrieval system
 - **Error Handling**: Comprehensive API response handling
 
